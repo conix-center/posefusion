@@ -59,19 +59,20 @@ public:
                 // client.publish(mqtt::message(TOPIC, "Body keypoints:", QOS, false));
                 for (auto person = 0 ; person < poseKeypoints.getSize(0) ; person++)
                 {
-                    client.publish(mqtt::message(TOPIC, "Person " + std::to_string(person), QOS, false));
+                    // Begin to build message to send over MQTT
+                    std::string message = std::to_string(person) + " ";
 
                     for (auto bodyPart = 0 ; bodyPart < poseKeypoints.getSize(1) ; bodyPart++)
                     {
-                        std::string valueToPrint;
-                        for (auto xyscore = 0 ; xyscore < poseKeypoints.getSize(2) ; xyscore++)
+                        // Only iterate through first 2 to get xy coordinates, 3 to include score
+                        for (auto xyscore = 0 ; xyscore < 2; xyscore++)
                         {
-                            valueToPrint += std::to_string(   poseKeypoints[{person, bodyPart, xyscore}]   ) + " ";
+                            message += std::to_string(poseKeypoints[{person, bodyPart, xyscore}]) + " ";
                         }
-                        std::cout << "publishing..." << std::flush;
-                        client.publish(mqtt::message(TOPIC, valueToPrint, QOS, false));
-                        std::cout << "done" << std::endl;
                     }
+
+                    // Publish once message is fully built
+                    client.publish(mqtt::message(TOPIC, message, QOS, false));
                 }
 
                 // We assume that we are running OpenPose WITHOUT face and hand detection

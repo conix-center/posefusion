@@ -11,11 +11,13 @@ using namespace cv;
 const string FILEPATH    = "./media/matrices.xml";
 const string SERVER_ADDR = "127.0.0.1:1883";
 const string CLIENT_ID   = "im-a-big-pc";
-const string TOPIC       = "lambda-1-pose";
+const string TOPIC1      = "lambda-1-pose";
+const string TOPIC2      = "lambda-2-pose";
 const string EXIT_MSG    = "EXIT";
 
 const int QOS = 0;
 
+void parseMessage(string message, vector<Point2d>& poseData);
 double triangulate(Mat& reconstructedPoint, const vector<Mat>& cameraMatrices,
                    const vector<Point2d>& pointsOnEachCamera);
 void printMat(Mat mat, int prec);
@@ -35,31 +37,69 @@ int main(int argc, char *argv[])
         return(0);
     }
 
-    printMat(projection_L, 5);
-    printMat(projection_R, 5);
+    // printMat(projection_L, 5);
+    // printMat(projection_R, 5);
 
-    shared_ptr<const mqtt::message> msg;
-
-    cout << "Initialzing MQTT Client...";
     mqtt::connect_options connOpts;
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
-    mqtt::client client(SERVER_ADDR, CLIENT_ID);
+
+    cout << "Initializing MQTT Clients";
+    mqtt::client client1(SERVER_ADDR, CLIENT1_ID);
+    mqtt::client client2(SERVER_ADDR, CLIENT2_ID);
     cout << "OK" << endl;
 
     try {
-        cout << "Connecting to MQTT Server..." << flush;
-        client.connect(connOpts);
-        client.subscribe(TOPIC, QOS);
+        cout << "Connecting to MQTT Servers..." << flush;
+        client1.connect(connOpts);
+        client1.subscribe(TOPIC1, QOS);
+        client2.connect(connOpts);
+        client2.subscribe(TOPIC2, QOS);
         cout << "OK" << endl;
 
         while (1) {
-            if (client.try_consume_message(&msg)) {
-                if(msg->to_string().compare(EXIT_MSG))
-                    cout << msg->to_string() << endl;
+            shared_ptr<const mqtt::message> mqttMsg;
+        
+            if (client1.try_consume_message(&mqttMsg)) {
+                string msg = mqttMsg->to_string();
+                vector<Point2d> poseData;
+
+                if(msg.compare(EXIT_MSG)){
+                    parseMessage(msg, poseData);
+
+                    cout << "Client 1" << endl;
+                    for (Point2d pt2d : poseData)
+                        cout << pt2d << endl;
+                    cout << endl;
+                }
                 else
                     break;
             }
+            else {
+                cerr << "No reponse from client 1" << endl;
+                return 1;
+            }
+
+            if (client2.try_consume_message(&mqttMsg)) {
+                string msg = mqttMsg->to_string();
+                vector<Point2d> poseData;
+
+                if(msg.compare(EXIT_MSG)){
+                    parseMessage(msg, poseData);
+
+                    cout << "Client 2" << endl;
+                    for (Point2d pt2d : poseData)
+                        cout << pt2d << endl;
+                    cout << endl;
+                }
+                else
+                    break;
+            }
+            else {
+                cerr << "No reponse from client 2" << endl;
+                return 1;
+            }
+
         }
 
         cout << "Disconnecting MQTT...";
@@ -73,6 +113,30 @@ int main(int argc, char *argv[])
 
     cout << "Exiting" << endl;
     return 0;
+}
+
+void parseMessage(string message, vector<Point2d>& poseData) {
+    // cout << message << endl;
+
+    stringstream msg_stream(message);
+    string temp;
+
+    int person_number;
+    msg_stream >> person_number;
+
+    if (person_number != 0) {
+        cout << "WARNING! More than 1 person on screen, ignoring person " << person_number << endl;
+        return;
+    }
+
+    for (int i = 0; i < 25; i++) {
+        double x, y;
+        
+        msg_stream >> x;
+        msg_stream >> y;
+
+        poseData.push_back(Point2d(x, y));
+    }
 }
 
 double triangulate(Mat& reconstructedPoint, const vector<Mat>& cameraMatrices,
