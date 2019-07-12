@@ -9,10 +9,11 @@ using namespace std;
 using namespace cv;
 
 const string FILEPATH    = "./media/matrices.xml";
-const string SERVER_ADDR = "127.0.0.1:1883";
-const string CLIENT_ID   = "im-a-big-pc";
+const string SERVER_ADDR = "128.237.154.149:1883";
+const string CLIENT1_ID  = "lambda-1-conn";
+const string CLIENT2_ID  = "lambda-4-conn";
 const string TOPIC1      = "lambda-1-pose";
-const string TOPIC2      = "lambda-2-pose";
+const string TOPIC2      = "lambda-4-pose";
 const string EXIT_MSG    = "EXIT";
 
 const int QOS = 0;
@@ -103,7 +104,8 @@ int main(int argc, char *argv[])
         }
 
         cout << "Disconnecting MQTT...";
-        client.disconnect();
+        client1.disconnect();
+        client2.disconnect();
         cout << "OK" << endl;
     }
     catch (const mqtt::exception& exc) {
