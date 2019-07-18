@@ -9,7 +9,7 @@
 // Custom OpenPose flags
 DEFINE_bool(no_display, false, "Disable the visual display.");
 
-const std::string SERVER_ADDR   = "127.0.0.1:1883";
+const std::string SERVER_ADDR   = "192.168.1.191";
 const std::string CLIENT_ID     = "lambda-1";
 const std::string TOPIC         = "lambda-1-pose";
 
