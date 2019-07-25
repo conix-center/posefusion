@@ -9,15 +9,15 @@
 // Custom OpenPose flags
 DEFINE_bool(no_display, false, "Disable the visual display.");
 
-const std::string SERVER_ADDR   = "192.168.1.191";
+const std::string SERVER_ADDR   = "oz.andrew.cmu.edu";
 const std::string CLIENT_ID     = "lambda-1";
-const std::string TOPIC         = "lambda-1-pose";
+const std::string TOPIC         = "/lambda/1/pose";
 
 const int QOS = 0;
 
 const mqtt::message EXIT_MSG = mqtt::message(TOPIC, "EXIT", 4, 2, false);
 
-mqtt::client client(SERVER_ADDR, CLIENT_ID, nullptr);
+mqtt::client client(SERVER_ADDR, CLIENT_ID);
 
 // This worker will just read and return all the jpg files in a directory
 class WUserOutput : public op::WorkerConsumer<std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>>

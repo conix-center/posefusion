@@ -1,15 +1,18 @@
 #include <openpose/headers.hpp>
+#include <unistd.h>
 
 using namespace std;
 using namespace cv;
 
 const string FILEPATH = "./media/matrices.xml";
+const int BOARD_WIDTH = 8;
+const int BOARD_HEIGHT = 6;
+const float SQUARE_SIZE = 0.115;
+const bool VERBOSE = true;
+const bool CHECKCORNERS = false;
 
-int BOARD_WIDTH;
-int BOARD_HEIGHT;
-
-float SQUARE_SIZE;
-
+void getCameraProjections(vector<Mat>& projectionMatrices, const vector<Mat>& calib_images,
+							const vector<vector<Point3f>>& objectPoints);
 void getCameraMatrices(const Mat& image_L, const Mat& image_R,
 					   Mat& projection_L, Mat& projection_R);
 double getCameraIntrinsics(const Mat im, const vector<vector<Point3f>>& objectPoints,
@@ -24,73 +27,124 @@ void printMat(Mat mat, int prec);
 int main(int argc, char *argv[])
 {
 	if (argc < 3) {
-		cout << "\nUsage: camera-calibration [left camera path] [right camera path]" << endl;
+		cout << "\nUsage: camera-calibration [cam1 path] [cam2 path] ... [camN path]" << endl;
+		cout << "Number of cameras must be greater than 1." << endl;
 		return 0;
 	}
 
-	Mat image_L = imread(argv[1]);
-	Mat image_R = imread(argv[2]);
+	// Read in all calibration images
+	vector<Mat> calib_images;
+	for (int i = 1; i < argc; i++) {
+		Mat image = imread(argv[i]);
 
-	if (image_L.empty() || image_R.empty()) {
-		cerr << "Could not load images." << endl;
-		exit(0);
+		// Return error if image can't be read
+		if (image.empty()) {
+			printf("Could not load image from path: %s\n", argv[i]);
+			return -1;
+		}
+
+		calib_images.push_back(image.clone());
 	}
 
+	int numCameras = calib_images.size();
+
+	// If you decide to use a different calibration board, uncomment this
+	/*
 	cout << "     Board width: ";
 	cin >> BOARD_WIDTH;
 	cout << "    Board height: ";
 	cin >> BOARD_HEIGHT;
 	cout << "Square size (in): ";
 	cin >> SQUARE_SIZE;
+	*/
 
-	vector<Mat> cameraMatrices;
-	Mat projection_L, projection_R;
-
-	getCameraMatrices(image_L, image_R, projection_L, projection_R);
-
-	FileStorage file(FILEPATH, FileStorage::WRITE);
-	file << "projection_L" << projection_L;
-	file << "projection_R" << projection_R;
-	file.release();
-
-	cout << "\nSaved projection matrices to files.\n" << endl;
-    return 0;
-}
-
-void getCameraMatrices(const Mat& image_L, const Mat& image_R,
-					   Mat& projection_L, Mat& projection_R)
-{
-	Mat K_L, K_R, d_L, d_R, R, T, E, F, extrinsic_L, extrinsic_R;
+	vector<Mat> projectionMatrices;
 	vector<vector<Point3f>> objectPoints;
-	vector<vector<Point2f>> imagePoints_L, imagePoints_R;
 	vector<Point3f> temp_obj;
-	double reprojError;
-
 	for (int i = 0; i < BOARD_HEIGHT; i++)
 		for (int j = 0; j < BOARD_WIDTH; j++)
 			temp_obj.push_back(Point3f((float)j * SQUARE_SIZE,
-									   (float)i * SQUARE_SIZE,
+									  -(float)i * SQUARE_SIZE,
 									   0));
 	objectPoints.push_back(temp_obj);
+	getCameraProjections(projectionMatrices, calib_images, objectPoints);
 
-	reprojError = getCameraIntrinsics(image_L, objectPoints, imagePoints_L, K_L, d_L);
-	cout << "\nLeft Camera Calibration Error: " << reprojError << endl;
-	reprojError = getCameraIntrinsics(image_R, objectPoints, imagePoints_R, K_R, d_R);
-	cout << "Right Camera Calibration Error: " << reprojError << endl;
+	if (VERBOSE) {
+		for (int i = 0; i < projectionMatrices.size(); i++) {
+			printf("Projection %d\n", i);
+			printMat(projectionMatrices[i], 5);
+			cout << endl;
+		}
+	}
 
-	stereoCalibrate(objectPoints, imagePoints_L, imagePoints_R,
-					K_L, d_L, K_R, d_R, image_L.size(), R, T, E, F);
+	FileStorage file(FILEPATH, FileStorage::WRITE);
+	file << "NumCameras" << (Mat_<int>(1,1) << projectionMatrices.size());
+	for (int i = 0; i < projectionMatrices.size(); i++) {
+		string header = "Projection" + to_string(i);
+		file << header << projectionMatrices[i];
+	}
+	file.release();
 
-	extrinsic_L = Mat::eye(3, 4, CV_64F);	// Left extrinsic = origin
-	hconcat(R, T, extrinsic_R);				// Right extrinsic = [R|t]
+	cout << "\nSaved projection matrices to " << FILEPATH << ".\n" << endl;
+    return 0;
+}
 
-	projection_L = K_L * extrinsic_L;		// Projection = K[R|t]
-	projection_R = K_R * extrinsic_R;
+void getCameraProjections(vector<Mat>& projectionMatrices, const vector<Mat>& calib_images,
+							const vector<vector<Point3f>>& objectPoints) {
+	double bestReprojError = 1;
+	Mat bestIntrinsic, bestDistortion;
+	Mat base = (Mat_<double>(1,4) << 0, 0, 0, 1);
+	vector<vector<vector<Point2f>>> imagePoints;
+	vector<Mat> K, d, cameraExtrinsics;
 
-	cout << "\nLeft projection:" << endl;
-	printMat(projection_L, 5);
-	cout << "Right projection:" << endl;
-	printMat(projection_R, 5);
+	// Solve each camera intrinsic and use the one with the lowest
+	// reprojection error (we assume that the camera models are the same)
+	for (int i = 0; i < calib_images.size(); i++) {
+		vector<vector<Point2f>> imPoints;
+		Mat cameraMatrix, distCoeff;
+		double reprojError = getCameraIntrinsics(calib_images[i], objectPoints, imPoints,
+							 					 cameraMatrix, distCoeff);
+
+		imagePoints.push_back(imPoints);
+		K.push_back(cameraMatrix);
+		d.push_back(distCoeff);
+
+		if (reprojError < bestReprojError) {
+			bestReprojError = reprojError;
+			bestIntrinsic = cameraMatrix;
+			bestDistortion = distCoeff;
+		}
+
+		if (VERBOSE) {
+			cout << "Camera " << i << ":" << endl;
+			printMat(cameraMatrix, 5);
+			printMat(distCoeff, 5);
+			cout << reprojError << "\n" << endl;
+		}
+	}
+
+	// Initialize left most camera as origin
+	cameraExtrinsics.push_back(Mat::eye(4, 4, CV_64F));
+
+	for (int i = 0; i < calib_images.size() - 1; i++) {
+		Mat R, T, E, F;
+
+		// Get Rotation (R) and Translation (T) w/ respect to prev camera
+		stereoCalibrate(objectPoints, imagePoints[i], imagePoints[i+1],			
+						K[i], d[i], K[i+1], d[i+1], calib_images[i].size(),
+						R, T, E, F);
+		Mat tempExtrinsic;
+		hconcat(R, T, tempExtrinsic);									// Extrinsic = [R|t]
+		tempExtrinsic.push_back(base);
+		// Calculate camera extrinsic with respect to origin (left most camera)
+		tempExtrinsic = (tempExtrinsic * cameraExtrinsics[i]); 
+		cameraExtrinsics.push_back(tempExtrinsic);
+	}
+
+	for (Mat extrinsic : cameraExtrinsics) {
+		extrinsic.pop_back(1);
+		projectionMatrices.push_back(bestIntrinsic * extrinsic);		// Projection = K[R|t]
+	}
 }
 
 double getCameraIntrinsics(const Mat im, const vector<vector<Point3f>>& objectPoints,
@@ -109,26 +163,25 @@ double getCameraIntrinsics(const Mat im, const vector<vector<Point3f>>& objectPo
     	cornerSubPix(gray_im, corners, Size(5, 5), Size(-1,-1),
     			 	 TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1 ));
     	
-		// Mat temp_im = im.clone();
-		// drawChessboardCorners(temp_im, Size(BOARD_WIDTH, BOARD_HEIGHT), corners, true);
-		// imshow("", temp_im);
-		// waitKey(0);
+    	if (CHECKCORNERS) {
+			Mat temp_im = im.clone();
+			drawChessboardCorners(temp_im, Size(BOARD_WIDTH, BOARD_HEIGHT), corners, true);
+			imshow("", temp_im);
+			waitKey(0);
+		}
 
 		imagePoints.push_back(corners);
     }
 
-    calibrateCamera(objectPoints, imagePoints, im.size(),
-    				cameraMatrix, distCoeff, rvecs, tvecs,
-    				CV_CALIB_FIX_K4 | CV_CALIB_FIX_K5);
+    // calibrateCamera(objectPoints, imagePoints, im.size(), cameraMatrix,
+    // 				distCoeff, rvecs, tvecs);
+    calibrateCamera(objectPoints, imagePoints, im.size(), cameraMatrix,
+    				distCoeff, rvecs, tvecs, CV_CALIB_FIX_PRINCIPAL_POINT);
 
-    // cout << "K: " << endl;
-    // printMat(cameraMatrix, 5);
-    // cout << "D: " << endl;
-    // printMat(distCoeff);
-
-	// undistort(im, temp_im, cameraMatrix, distCoeff);
-	// imshow("", temp_im);
-	// waitKey(0);
+    Mat temp_im;
+	undistort(im, temp_im, cameraMatrix, distCoeff);
+	imshow("", temp_im);
+	waitKey(0);
 
     return computeReprojectionErrors(objectPoints, imagePoints, rvecs, tvecs, cameraMatrix, distCoeff);
 }
@@ -164,8 +217,7 @@ void printMat(Mat mat, int prec)
         cout << "[";
         for(int j=0; j<mat.size().width; j++)
         {
-        	printf("%10f", mat.at<double>(i,j));
-            // cout << setprecision(prec) << mat.at<double>(i,j);
+        	printf("%10.*f", prec, mat.at<double>(i, j));
             if(j != mat.size().width-1)
                 cout << ", ";
             else
