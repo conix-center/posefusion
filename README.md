@@ -1,31 +1,44 @@
-Adding and Testing Custom Code
+Pose Fusion
 ====================================
 
 
 
 ## Purpose
-You can quickly add your custom code into this folder so that quick prototypes can be easily tested without having to create a whole new project just for it.
+This program reconstructs multiple OpenPose data points into a singular (currently only works for 1 person) 3D pose in real time. The 3D coordinates are then published to a Unity application via MQTT, where the data can be eventually rendered into photorealistic avatar.
 
 
+## Dependencies
+Including the dependencies that OpenPose requires, this program also uses the [Paho MQTT C++](https://github.com/eclipse/paho.mqtt.cpp) Library. Follow their instructions to download and install MQTT.
 
-## How-to
-1. Install/compile OpenPose as usual.
-2. Add your custom *.cpp / *.hpp files here,. Hint: You might want to start by copying the [OpenPoseDemo](../openpose/openpose.cpp) example or any of the [examples/tutorial_api_cpp/](../tutorial_api_cpp/) examples. Then, you can simply modify their content.
-3. Add the name of your custom *.cpp / *.hpp files at the top of the [examples/user_code/CMakeLists.txt](./CMakeLists.txt) file.
-4. Re-compile OpenPose.
+
+## Installing and Compiling
+1. Install/compile [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose).
+2. Clone **posefusion** into the openpose folder on your computer.
+3. In the file openpose/CMakeLists.txt, write `add_subdirectory(posefusion)`. This should include posefusion in the cmake build.
+4. Compile OpenPose.
 ```
-# Ubuntu/Mac
 cd build/
 make -j`nproc`
-# Windows
-# Close Visual Studio, re-run CMake, and re-compile the project in Visual Studio 
 ```
-5. **Run step 4 every time that you make changes into your code**.
 
 
+## Running the Program
+Make sure that all of these programs are run in the openpose folder (not sure why, has to do with the openpose library). 
 
-## Running your Custom Code
-Run:
+**Camera Calibration:**
 ```
-./build/examples/user_code/{your_custom_file_name}
+./build/posefusion/camera-calibration {im_1 path} {im_2 path} ... {im_N path}
 ```
+This will take in N images of a checkerboard from different angles and compute the camera matrices required for triangulation. The matrices will be saved in *openpose/media/matrices.xml* for use later on. When facing the calibration checkerboard, the cameras should be in ascending order from left to right (Left most is camera 1, right most is camera N).
+
+**PoseFusion Client**
+```
+./build/posefusion/posefusion-client
+```
+This runs the openpose program that gets body pose data from a single RGB camera. The pose then gets published to a MQTT broker. Each computer must be running the client in order for the PoseFusion server to run properly.
+
+**PoseFusion Server**
+```
+./build/posefusion/posefusion-server
+```
+This subscribes to the pose data topics and reads in the constantly updating body pose. It then applies the camera matrices stored from the most recent camera calibration to the pose estimates and reconstructs a 3D version of openpose. The resulting 3D data then gets sents to Unity via MQTT to be rendered.
