@@ -10,8 +10,8 @@
 DEFINE_bool(no_display, false, "Disable the visual display.");
 
 const std::string SERVER_ADDR   = "oz.andrew.cmu.edu";
-const std::string CLIENT_ID     = "lambda-1";
-const std::string TOPIC         = "/lambda/1/pose";
+const std::string CLIENT_ID     = "lambda-3";
+const std::string TOPIC         = "/lambda/3/pose";
 
 const int QOS = 0;
 

@@ -5,11 +5,11 @@ using namespace std;
 using namespace cv;
 
 const string FILEPATH = "./media/matrices.xml";
-const int BOARD_WIDTH = 8;
-const int BOARD_HEIGHT = 6;
+const int BOARD_WIDTH = 6;
+const int BOARD_HEIGHT = 8;
 const float SQUARE_SIZE = 0.115;
 const bool VERBOSE = true;
-const bool CHECKCORNERS = false;
+const bool CHECKCORNERS = true;
 
 void getCameraProjections(vector<Mat>& projectionMatrices, const vector<Mat>& calib_images,
 							const vector<vector<Point3f>>& objectPoints);
@@ -141,9 +141,9 @@ void getCameraProjections(vector<Mat>& projectionMatrices, const vector<Mat>& ca
 		cameraExtrinsics.push_back(tempExtrinsic);
 	}
 
-	for (Mat extrinsic : cameraExtrinsics) {
-		extrinsic.pop_back(1);
-		projectionMatrices.push_back(bestIntrinsic * extrinsic);		// Projection = K[R|t]
+	for (int i = 0; i < cameraExtrinsics.size(); i++) {
+		cameraExtrinsics[i].pop_back(1);
+		projectionMatrices.push_back(K[i] * cameraExtrinsics[i]);		// Projection = K[R|t]
 	}
 }
 
@@ -173,10 +173,10 @@ double getCameraIntrinsics(const Mat im, const vector<vector<Point3f>>& objectPo
 		imagePoints.push_back(corners);
     }
 
-    // calibrateCamera(objectPoints, imagePoints, im.size(), cameraMatrix,
-    // 				distCoeff, rvecs, tvecs);
     calibrateCamera(objectPoints, imagePoints, im.size(), cameraMatrix,
-    				distCoeff, rvecs, tvecs, CV_CALIB_FIX_PRINCIPAL_POINT);
+    				distCoeff, rvecs, tvecs);
+    // calibrateCamera(objectPoints, imagePoints, im.size(), cameraMatrix,
+    // 				distCoeff, rvecs, tvecs, CV_CALIB_FIX_PRINCIPAL_POINT);
 
     Mat temp_im;
 	undistort(im, temp_im, cameraMatrix, distCoeff);

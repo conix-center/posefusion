@@ -30,7 +30,8 @@ void parseArgs(int argc, char** argv);
 int loadProjections();
 void parseMessage(string message, vector<Point2d>& poseData);
 void triangulate(vector<Point3d>& poseData3D);
-double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& pointsOnEachCamera);
+double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& pointsOnEachCamera,
+    const vector<Mat>& cameraMats);
 void printMat(Mat mat, int prec);
 
 // Do nothing
@@ -103,7 +104,7 @@ class callback : public virtual mqtt::callback,
             if (ready) {
                 vector<Point3d> poseData3D;
                 triangulate(poseData3D);
-                
+        
                 // Begin to build message to send over MQTT
                 msg = "Person0,";                             // Assuming only one person
                 // std::string message = std::to_string(person) + " ";  // When # of people > 1    
@@ -118,18 +119,9 @@ class callback : public virtual mqtt::callback,
                 cli_.publish(TOPIC_3D, msg, QOS, false);
 
                 // Clear vectors to be ready to be filled
-                for (vector<Point2d> pts : posePoints)
-                    pts.clear();
+                for (int i = 0; i < posePoints.size(); i++)
+                    posePoints[i].clear();
             }
-
-// for (vector<Point2d> vpts : posePoints) {
-//     cout << "size: " << vpts.size() << endl;
-//     for (Point2d pt : vpts) {
-//         cout << pt << " ";
-//     }
-//     cout << "\n" << endl;
-// }
-
         }
     }
 
@@ -164,7 +156,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    cout << "\nPress q<Enter> to quit: " << endl;
+    cout << "\nPress q<Enter> to quit: \n" << endl;
     while (std::tolower(std::cin.get()) != 'q');
 
     try {
@@ -272,7 +264,42 @@ void triangulate(vector<Point3d>& poseData3D) {
             continue;
         }
 
-        reprojectionError = triangulatePoint(reconstructedPoint, pointsOnEachCamera);
+        reprojectionError = triangulatePoint(reconstructedPoint, pointsOnEachCamera, cameraMatrices);
+
+        if (cameraMatrices.size() > 2) {
+            bool removedCamera = false;
+            double bestReprojectionError = reprojectionError;
+            Point3d bestReconstructedPoint;
+
+            for (int i = 0; i < cameraMatrices.size(); i++) {
+                vector<Mat> newCameraMatrices = cameraMatrices;
+                vector<Point2d> newPointsOnEachCamera = pointsOnEachCamera;
+                Point3d newReconstructedPoint;
+
+                // Remove camera i
+                newCameraMatrices.erase(newCameraMatrices.begin() + i);
+                newPointsOnEachCamera.erase(newPointsOnEachCamera.begin() + i);
+
+                double newReprojectionError = triangulatePoint(newReconstructedPoint,
+                    newPointsOnEachCamera, newCameraMatrices);
+
+                // New reprojection error should be significantly better than previous error
+                if (newReprojectionError < bestReprojectionError 
+                    && newReprojectionError < 0.9 * reprojectionError)
+                {
+                    bestReprojectionError = newReprojectionError;
+                    bestReconstructedPoint = newReconstructedPoint;
+                    removedCamera = true;
+                }
+            }
+
+            if (removedCamera)
+            {
+                reprojectionError = bestReprojectionError;
+                reconstructedPoint = bestReconstructedPoint;
+            }
+        }
+
         reprojErrors.push_back(reprojectionError);
         
         // if (reprojectionError < ERRTHRESHOLD)
@@ -285,44 +312,41 @@ void triangulate(vector<Point3d>& poseData3D) {
         for (int i = 0; i < posePoints.size(); i++) {
             printf("Client %d points:\n", i);
             for (Point2f pt : posePoints[i]) {
-                printf("[%6.2f, %6.2f] ", pt.x, pt.y);
+                printf("[% 8.2f,% 8.2f] ", pt.x, pt.y);
             }
             cout << endl;
         }
 
-        cout << "Reprojection Error:" << endl;
-        for (double err : reprojErrors) {
-            printf("%12f ", err);
-        }
+        cout << "3D points:" << endl;
+        for (Point3d pt3d : poseData3D)
+            printf("[% 4.2f,% 4.2f,% 4.2f] ", pt3d.x, pt3d.y, pt3d.z);
         cout << endl;
 
-        // printf("Client 1\t\t\tClient 2\t\t\t3D Points\t\t\tReproj Err\n");
-        // for (int i = 0; i < 25; i++) {
-        //     printf("[%8.3f,%8.3f]\t\t[%8.3f,%8.3f]\t\t[%8.3f,%8.3f,%8.3f]\t%8.3f\n",
-        //         poseData1[i].x, poseData1[i].y, poseData2[i].x, poseData2[i].y,
-        //         poseData3D[i].x, poseData3D[i].y, poseData3D[i].z,
-        //         reprojErrs[i]);
-        // }
-        // cout << endl;
+        cout << "Reprojection Error:" << endl;
+        for (double err : reprojErrors) {
+            printf(" % -18.4f ", err);
+        }
+        cout << "\n" << endl;
     }
 
 }
 
-double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& pointsOnEachCamera) {
-    if (cameraMatrices.size() != pointsOnEachCamera.size())
-        cerr << "Number of cameras: " << to_string(cameraMatrices.size()) <<
+double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& pointsOnEachCamera,
+                        const vector<Mat>& cameraMats) {
+    if (cameraMats.size() != pointsOnEachCamera.size())
+        cerr << "Number of cameras: " << to_string(cameraMats.size()) <<
                 " != # of points per camera: " << to_string(pointsOnEachCamera.size()) <<
                 endl;
 
     // Create and fill A for homogenous equation system Ax = 0
-    const int numCameras = (int)cameraMatrices.size();
+    const int numCameras = (int)cameraMats.size();
     Mat A(numCameras*2, 4, CV_64F);
 
     for (int i = 0; i < numCameras; i++) {
-        A.rowRange(i*2, i*2+1)   = pointsOnEachCamera[i].x * cameraMatrices[i].rowRange(2,3)
-                                 - cameraMatrices[i].rowRange(0,1);
-        A.rowRange(i*2+1, i*2+2) = pointsOnEachCamera[i].y * cameraMatrices[i].rowRange(2,3)
-                                 - cameraMatrices[i].rowRange(1,2);
+        A.rowRange(i*2, i*2+1)   = pointsOnEachCamera[i].x * cameraMats[i].rowRange(2,3)
+                                 - cameraMats[i].rowRange(0,1);
+        A.rowRange(i*2+1, i*2+2) = pointsOnEachCamera[i].y * cameraMats[i].rowRange(2,3)
+                                 - cameraMats[i].rowRange(1,2);
     }
 
     // Solve x for Ax = 0 --> SVD on A
@@ -338,7 +362,7 @@ double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& poin
     double average = 0.;
 
     for (int i = 0; i < numCameras; i++) {
-        Mat reprojectedPoint = cameraMatrices[i] * reconstructedMat;
+        Mat reprojectedPoint = cameraMats[i] * reconstructedMat;
         reprojectedPoint /= reprojectedPoint.at<double>(2,0);
         
         average += sqrt(pow(reprojectedPoint.at<double>(0,0) - pointsOnEachCamera[i].x,2)
