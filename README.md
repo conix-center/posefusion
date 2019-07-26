@@ -42,3 +42,9 @@ This runs the openpose program that gets body pose data from a single RGB camera
 ./build/posefusion/posefusion-server
 ```
 This subscribes to the pose data topics and reads in the constantly updating body pose. It then applies the camera matrices stored from the most recent camera calibration to the pose estimates and reconstructs a 3D version of openpose. The resulting 3D data then gets sents to Unity via MQTT to be rendered.
+
+
+## TODO List
+[ ] Finish documenting code
+[ ] Include multi-person functionality (right now only works with one person in frame)
+[ ] Make an automatic distributed camera calibration system instead of having to transfer images
