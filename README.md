@@ -45,6 +45,6 @@ This subscribes to the pose data topics and reads in the constantly updating bod
 
 
 ## TODO List
-[ ] Finish documenting code
-[ ] Include multi-person functionality (right now only works with one person in frame)
-[ ] Make an automatic distributed camera calibration system instead of having to transfer images
+- [ ] Finish documenting code
+- [ ] Include multi-person functionality (right now only works with one person in frame)
+- [ ] Make an automatic distributed camera calibration system instead of having to transfer images
