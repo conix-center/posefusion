@@ -19,7 +19,7 @@ const mqtt::message EXIT_MSG = mqtt::message(TOPIC, "EXIT", 4, 2, false);
 
 mqtt::client client(SERVER_ADDR, CLIENT_ID);
 
-// This worker will just read and return all the jpg files in a directory
+// This worker gets all the points and publishes them to a MQTT broker
 class WUserOutput : public op::WorkerConsumer<std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>>
 {
 public:
@@ -51,8 +51,8 @@ public:
         try
         {
             // User's displaying/saving/other processing here
-                // datumPtr->cvOutputData: rendered frame with pose or heatmaps
-                // datumPtr->poseKeypoints: Array<float> with the estimated pose
+            // datumPtr->cvOutputData: rendered frame with pose or heatmaps
+            // datumPtr->poseKeypoints: Array<float> with the estimated pose
             if (datumsPtr != nullptr && !datumsPtr->empty())
             {
                 const auto& poseKeypoints = datumsPtr->at(0)->poseKeypoints;
@@ -247,8 +247,8 @@ int main(int argc, char *argv[])
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     // Run PoseFusion
-    poseFusion();
+    int ret = poseFusion();
 
     std::cout << "\nDone." << std::endl;
-    return 0;
+    return ret;
 }

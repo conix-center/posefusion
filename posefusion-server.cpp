@@ -86,7 +86,8 @@ class callback : public virtual mqtt::callback,
         cli_.subscribe(TOPIC_POSE, QOS);
     }
 
-    // Callback for when a message arrives.
+    // Callback for when a message arrives. Processes message then waits for queue to fill up
+    // then performs triangulation once all camera frames have been received.
     void message_arrived(mqtt::const_message_ptr mqttMessage) override {
         int source = mqttMessage->get_topic()[8] - '1';     // Get lambda # (starting from 0)
 
@@ -95,7 +96,10 @@ class callback : public virtual mqtt::callback,
 
             parseMessage(msg, posePoints[source]);
 
+
             bool ready = true;
+            // Checks to make sure all points are filled, so will not work if one or more
+            // KNOWN cameras are completely covered 
             for (vector<Point2d> pts : posePoints) {
                 if (pts.empty())
                     ready = false;
@@ -130,7 +134,6 @@ public:
              : nretry_(0), cli_(cli), connOpts_(connOpts), subListener_("Subscription"){}
 };
 
-
 int main(int argc, char** argv) {
     parseArgs(argc, argv);
 
@@ -156,6 +159,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // Spins until user presses 'q' to stop
     cout << "\nPress q<Enter> to quit: \n" << endl;
     while (std::tolower(std::cin.get()) != 'q');
 
@@ -173,6 +177,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+// Function to parse command line arguments
 void parseArgs(int argc, char** argv) {
     int c;
     while ((c = getopt(argc, argv, "dh")) != -1) {
@@ -191,6 +196,8 @@ void parseArgs(int argc, char** argv) {
     }
 }
 
+// Loads the camera projection matrices from a matrices.xml file that 
+// should be filled previously from the camera calibration step.
 int loadProjections() {
     Mat cameraNumber;
     FileStorage file;
@@ -226,6 +233,8 @@ int loadProjections() {
     return numCameras;
 }
 
+// Parses the mqtt message string and stores the points in the 
+// corresponding Point2d vector
 void parseMessage(string message, vector<Point2d>& poseData) {
     stringstream msg_stream(message);
     string temp;
@@ -243,6 +252,10 @@ void parseMessage(string message, vector<Point2d>& poseData) {
     }
 }
 
+// Performs the triangulation of the pose points and returns the points
+// in 3D. Currently does not do any filtering or checking to see if the points
+// are too far from the expected human pose length. Nor does it check if 
+// the reconstructed point's reprojection error is too high. In TODO list
 void triangulate(vector<Point3d>& poseData3D) {
     vector<double> reprojErrors;
 
@@ -264,8 +277,13 @@ void triangulate(vector<Point3d>& poseData3D) {
             continue;
         }
 
+        // Perform initial triangulation of single point
         reprojectionError = triangulatePoint(reconstructedPoint, pointsOnEachCamera, cameraMatrices);
 
+        // If more than 2 cameras, perform basic RANSAC by removing a single camera and performing
+        // triangulation on the subset of cameras and points. Use the reconstructed point with the
+        // least reprojection error. Currently only removes 1 camera. TODO: Continue iterations such
+        // that more cameras are removed if it improves reprojection error.
         if (cameraMatrices.size() > 2) {
             bool removedCamera = false;
             double bestReprojectionError = reprojectionError;
@@ -276,7 +294,7 @@ void triangulate(vector<Point3d>& poseData3D) {
                 vector<Point2d> newPointsOnEachCamera = pointsOnEachCamera;
                 Point3d newReconstructedPoint;
 
-                // Remove camera i
+                // Remove camera i to create new subset of camera matrices and pose points
                 newCameraMatrices.erase(newCameraMatrices.begin() + i);
                 newPointsOnEachCamera.erase(newPointsOnEachCamera.begin() + i);
 
@@ -302,6 +320,12 @@ void triangulate(vector<Point3d>& poseData3D) {
 
         reprojErrors.push_back(reprojectionError);
         
+        // TODO: Filtering. Get distances of certain point to point correspondences and 
+        // check to see if length is acceptable/realistic for a human. For instance if the
+        // neck is a meter long, you know something is wrong.
+
+        // TODO: Establish an error threshold in order to remove points that are too 
+        // far from the expected reprojection error 
         // if (reprojectionError < ERRTHRESHOLD)
             poseData3D.push_back(reconstructedPoint);
         // else
@@ -331,6 +355,8 @@ void triangulate(vector<Point3d>& poseData3D) {
 
 }
 
+// Function that performs the reconstruction of a singular point from
+// multiple 2D points into one 3D point, given the camera matrices.
 double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& pointsOnEachCamera,
                         const vector<Mat>& cameraMats) {
     if (cameraMats.size() != pointsOnEachCamera.size())
@@ -342,6 +368,12 @@ double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& poin
     const int numCameras = (int)cameraMats.size();
     Mat A(numCameras*2, 4, CV_64F);
 
+
+    // This method combines the perspective models to get an overdetermined homogenous 
+    // system of linear equations that can be solved with SVD.
+    // TODO: Current method minimizes algebraic error, if we implement a 
+    // non-linear triangulation method to minimize geometric (reprojection) error, can
+    // be more accurate. For John??
     for (int i = 0; i < numCameras; i++) {
         A.rowRange(i*2, i*2+1)   = pointsOnEachCamera[i].x * cameraMats[i].rowRange(2,3)
                                  - cameraMats[i].rowRange(0,1);
@@ -372,6 +404,7 @@ double triangulatePoint(Point3d& reconstructedPoint, const vector<Point2d>& poin
     return average / numCameras;
 }
 
+// Helper funtction to print cv::Mat matrices 
 void printMat(Mat mat, int prec) {      
     for(int i = 0; i < mat.size().height; i++) {
         cout << "[";

@@ -17,6 +17,7 @@ int main(int argc, char const *argv[])
 
 	Mat im;
 
+	// Wait till 'q' key is pressed then saves image
 	while (waitKey(1) != 'q')
 	{ 	
 		cam >> im;
