@@ -23,13 +23,19 @@ make -j`nproc`
 
 
 ## Running the Program
-Make sure that all of these programs are run in the openpose folder (not sure why, has to do with the openpose library). 
+Make sure that **ALL** of these programs are run in the **openpose** folder.
 
 **Camera Calibration:**
+On each computer, run 
 ```
-./build/posefusion/camera-calibration {im_1 path} {im_2 path} ... {im_N path}
+./build/posefusion/image-grab
+``` 
+Make sure that the checkerboard is in each frame, and press 'q' on each image to save the calibration image.
+Then run the calibration script.
 ```
-This will take in N images of a checkerboard from different angles and compute the camera matrices required for triangulation. The matrices will be saved in *openpose/media/matrices.xml* for use later on. When facing the calibration checkerboard, the cameras should be in ascending order from left to right (Left most is camera 1, right most is camera N).
+./posefusion/calibration.sh
+```
+This scp the corresponding calibration images from each lambda machine and run camera-calibration.cpp. This takes in N images of a checkerboard from different angles and computes the camera matrices required for triangulation. The matrices will be saved in *openpose/media/matrices.xml* for use later on. When facing the calibration checkerboard, the cameras should be in ascending order from left to right (Left most is camera 1, right most is camera N).
 
 **PoseFusion Client**
 ```
