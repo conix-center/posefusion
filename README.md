@@ -51,6 +51,7 @@ This subscribes to the pose data topics and reads in the constantly updating bod
 
 
 ## TODO List
-- [ ] Finish documenting code
+- [x] Finish documenting code
 - [ ] Include multi-person functionality (right now only works with one person in frame)
+- [ ] Include filtering to determine if the reconstructed point is realistic in relation to proportions of a human
 - [ ] Make an automatic distributed camera calibration system instead of having to transfer images
