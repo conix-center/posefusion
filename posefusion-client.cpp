@@ -5,19 +5,24 @@
 #include <openpose/flags.hpp>
 #include <openpose/headers.hpp>
 #include "mqtt/client.h"
+#include <sys/time.h>
 
 // Custom OpenPose flags
 DEFINE_bool(no_display, false, "Disable the visual display.");
 
-const std::string SERVER_ADDR   = "oz.andrew.cmu.edu";
-const std::string CLIENT_ID     = "lambda-3";
-const std::string TOPIC         = "/lambda/3/pose";
+const std::string SERVER_ADDR = "oz.andrew.cmu.edu";
+const std::string CLIENT_ID   = "lambda-3";
+const std::string TOPIC       = "/lambda/3/pose";
+const float MIN_CONF_SCORE    = 0.4;
+const float MAX_TIME_FRAME_MS = 40;
 
 const int QOS = 0;
 
 const mqtt::message EXIT_MSG = mqtt::message(TOPIC, "EXIT", 4, 2, false);
 
 mqtt::client client(SERVER_ADDR, CLIENT_ID);
+
+static long int last_sent = 0;
 
 // This worker gets all the points and publishes them to a MQTT broker
 class WUserOutput : public op::WorkerConsumer<std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>>
@@ -56,24 +61,35 @@ public:
             if (datumsPtr != nullptr && !datumsPtr->empty())
             {
                 const auto& poseKeypoints = datumsPtr->at(0)->poseKeypoints;
+                const auto& poseScores = datumsPtr->at(0)->poseScores;
                 // client.publish(mqtt::message(TOPIC, "Body keypoints:", QOS, false));
+                std::string total_message = "";
                 for (auto person = 0 ; person < poseKeypoints.getSize(0) ; person++)
                 {
-                    // Begin to build message to send over MQTT
-                    std::string message = std::to_string(person) + " ";
+		    float score = poseScores[person];
+		    printf("Score %d: %f\n", person, poseScores[person]);
+		    if (score > MIN_CONF_SCORE) {
+			    struct timeval tp;
+			    gettimeofday(&tp, NULL);
+			    long int ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+			    last_sent = ms;
 
-                    for (auto bodyPart = 0 ; bodyPart < poseKeypoints.getSize(1) ; bodyPart++)
-                    {
-                        // Only iterate through first 2 to get xy coordinates, 3 to include score
-                        for (auto xyscore = 0 ; xyscore < 2; xyscore++)
-                        {
-                            message += std::to_string(poseKeypoints[{person, bodyPart, xyscore}]) + " ";
-                        }
-                    }
+			    // Begin to build message to send over MQTT
+			    std::string message = std::to_string(ms) + " " + std::to_string(person) + " " + std::to_string(score) + " ";
 
-                    // Publish once message is fully built
-                    client.publish(mqtt::message(TOPIC, message, QOS, false));
+			    for (auto bodyPart = 0 ; bodyPart < poseKeypoints.getSize(1) ; bodyPart++)
+			    {
+				    // Only iterate through first 2 to get xy coordinates, 3 to include score
+				    for (auto xyscore = 0 ; xyscore < 2; xyscore++)
+				    {
+					    message += std::to_string(poseKeypoints[{person, bodyPart, xyscore}]) + " ";
+				    }
+			    }
+			    total_message += message + ",";
+		    }
                 }
+		// Publish once message is fully built
+		client.publish(mqtt::message(TOPIC, total_message, QOS, false));
 
                 // We assume that we are running OpenPose WITHOUT face and hand detection
                 if (FLAGS_face) {
@@ -93,7 +109,19 @@ public:
                     std::cout << "OK" << std::endl;
                     this->stop();
                 }
-            }
+            } else {
+		std::string total_message = "";
+		struct timeval tp;
+		gettimeofday(&tp, NULL);
+		long int ms = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+		if (ms - last_sent > MAX_TIME_FRAME_MS) {
+			// Begin to build message to send over MQTT
+			std::string message = std::to_string(ms);
+			total_message += message;
+			client.publish(mqtt::message(TOPIC, total_message, QOS, false));
+			last_sent = ms;
+		}
+	    }
         }
         catch (const std::exception& e)
         {
