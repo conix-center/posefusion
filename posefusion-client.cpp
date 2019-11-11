@@ -11,10 +11,11 @@
 DEFINE_bool(no_display, false, "Disable the visual display.");
 
 const std::string SERVER_ADDR = "oz.andrew.cmu.edu";
-const std::string CLIENT_ID   = "lambda-3";
-const std::string TOPIC       = "/lambda/3/pose";
 const float MIN_CONF_SCORE    = 0.4;
 const float MAX_TIME_FRAME_MS = 40;
+
+static std::string CLIENT_ID   = "lambda-"; // "lambda-3";
+static std::string TOPIC       = "/lambda/"; // "/lambda/3/pose";
 
 const int QOS = 0;
 
@@ -273,6 +274,15 @@ int poseFusion()
 int main(int argc, char *argv[])
 {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+    if (argc <= 1) {
+      std::cout << "Usage: " << argv[0] << " <lambda_number>" << "\n";
+      exit(1);
+    } else {
+      CLIENT_ID += argv[1];
+      TOPIC += argv[1];
+      TOPIC += "/pose";
+    }
 
     // Run PoseFusion
     int ret = poseFusion();
