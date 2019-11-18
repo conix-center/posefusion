@@ -2,10 +2,13 @@ import time
 import random
 import numpy 
 import paho.mqtt.client as paho
-broker="oz.andrew.cmu.edu"
-object_path="/topic/skeleton"
-draw_path="/topic/openpose"
+import json
+
+SERVER_ADDR     = "oz.andrew.cmu.edu"
+TOPIC_3D        = "/posefusion/skeleton"
 TOPIC_CAMERA    = "/posefusion/camera/+"
+draw_path = "/topic/openpose"
+scene = "refactor"
 
 FORMAT="{0:0.3f}"
 lastx=0.0
@@ -16,15 +19,50 @@ y=0.0
 z=0.0
 MESSAGE=""
 
-global prev
-prev = 0
-
 # 0: red, 1: green, 2: blue
 color_person = {
     "Person0": "#FF0000", 
     "Person1": "#00FF00",
     "Person2": "#0000FF",
 }
+
+def refactorDraw(person,bodypart,arr, color):
+    # partID
+    partID = person+'_'+bodypart
+
+    # Iterate through each body part
+    data_str = ""
+    for i in range(len(arr)):
+        # if (x != 0) and (y != 0) and (z != 0):
+        x = -arr[i][0]
+        y = 2-arr[i][1]
+        z = arr[i][2]
+        data_str += str(x) + " " + str(y) + " " + str(z) + ", "
+    data_str = data_str[:-2] # remove last comma
+
+    # Generate message
+    message = {}
+    message['object_id'] = 'thickline_' + partID
+    message['action'] = 'create'
+
+    data = {}
+    data['object_type'] = 'thickline'
+    data['lineWidth'] = 11
+    data['color'] = color # '#FF88EE'
+    data['path'] =  data_str # '0 0 0, 1 0 0, 1 1 0, 1 1 1'
+
+    message['data'] = data
+
+    # Generate JSON
+    json_data = json.dumps(message)
+
+    # Publish message
+    new_draw_path = "realm/s/" + scene + "/"
+    client.publish(new_draw_path + message['object_id'], json_data)
+
+    # debugging
+    print(new_draw_path + message['object_id'], json_data)
+
 
 def tryDraw(person,bodypart,arr, color):
     counter = 0
@@ -63,8 +101,8 @@ def tryDraw(person,bodypart,arr, color):
         counter = counter + 1
 
 def on_connect(client, userdata, flags, rc):
-    print("connected with result code "+str(rc))
-    client.subscribe(object_path) #subscribe
+    print("Connected with result code " + str(rc))
+    client.subscribe(TOPIC_3D) #subscribe
     client.subscribe(TOPIC_CAMERA) #subscribe
 
 #define callback: listen for /topic/skeleton/person0 messages
@@ -98,82 +136,71 @@ def on_message(client, userdata, message):
         client.publish(draw_path+"/cube_cam" + str(camera),cam_coord)
         # client.publish(draw_path+"/thickline_"+partID,cam_coord)
     else:
-        # before = time.time()
         theMessage=str(message.payload.decode("utf-8"))
         splits=theMessage.split(',')
 
-        # splits[0] is the name e.g. "Person_1"
-        #   client.publish(draw_path,"thickline_1,2,2,2,3,3,3,0,0,0,0,#CE00FF,on")
         Person = splits[0]
+        print(Person + " " + str(time.time()))
 
-        # if (Person == "Person0") or (Person == "Person1"):
-        if (True):
-            # print(Person + " " + str((time.time()-prev)*1000) + "ms")
-            print(Person + " " + str(time.time()))
+        # if (Person == "Person0"):
+        Nose = [float(splits[1]), float(splits[2]), float(splits[3])]
+        Neck = [float(splits[4]), float(splits[5]), float(splits[6])]
+        RShoulder = [float(splits[7]), float(splits[8]), float(splits[9])]
+        RElbow = [float(splits[10]), float(splits[11]), float(splits[12])]
+        RWrist = [float(splits[13]), float(splits[14]), float(splits[15])]
+        LShoulder = [float(splits[16]), float(splits[17]), float(splits[18])]
+        LElbow = [float(splits[19]), float(splits[20]), float(splits[21])]
+        LWrist = [float(splits[22]), float(splits[23]), float(splits[24])]
+        MidHip = [float(splits[25]), float(splits[26]), float(splits[27])]
+        RHip = [float(splits[28]), float(splits[29]), float(splits[30])]
+        RKnee = [float(splits[31]), float(splits[32]), float(splits[33])]
+        RAnkle = [float(splits[34]), float(splits[35]), float(splits[36])]
+        LHip = [float(splits[37]), float(splits[38]), float(splits[39])]
+        LKnee = [float(splits[40]), float(splits[41]), float(splits[42])]
+        LAnkle = [float(splits[43]), float(splits[44]), float(splits[45])]
+        REye = [float(splits[46]), float(splits[47]), float(splits[48])]
+        LEye = [float(splits[49]), float(splits[50]), float(splits[51])]
+        REar = [float(splits[52]), float(splits[53]), float(splits[54])]
+        LEar = [float(splits[55]), float(splits[56]), float(splits[57])]
+        LBigToe = [float(splits[58]), float(splits[59]), float(splits[60])]
+        LSmallToe = [float(splits[61]), float(splits[62]), float(splits[63])]
+        LHeel = [float(splits[64]), float(splits[65]), float(splits[66])]
+        RBigToe = [float(splits[67]), float(splits[68]), float(splits[69])]
+        RSmallToe = [float(splits[70]), float(splits[71]), float(splits[72])]
+        RHeel = [float(splits[73]), float(splits[74]), float(splits[75])]
 
-            # if (Person == "Person0"):
-            Nose = [float(splits[1]), float(splits[2]), float(splits[3])]
-            Neck = [float(splits[4]), float(splits[5]), float(splits[6])]
-            RShoulder = [float(splits[7]), float(splits[8]), float(splits[9])]
-            RElbow = [float(splits[10]), float(splits[11]), float(splits[12])]
-            RWrist = [float(splits[13]), float(splits[14]), float(splits[15])]
-            LShoulder = [float(splits[16]), float(splits[17]), float(splits[18])]
-            LElbow = [float(splits[19]), float(splits[20]), float(splits[21])]
-            LWrist = [float(splits[22]), float(splits[23]), float(splits[24])]
-            MidHip = [float(splits[25]), float(splits[26]), float(splits[27])]
-            RHip = [float(splits[28]), float(splits[29]), float(splits[30])]
-            RKnee = [float(splits[31]), float(splits[32]), float(splits[33])]
-            RAnkle = [float(splits[34]), float(splits[35]), float(splits[36])]
-            LHip = [float(splits[37]), float(splits[38]), float(splits[39])]
-            LKnee = [float(splits[40]), float(splits[41]), float(splits[42])]
-            LAnkle = [float(splits[43]), float(splits[44]), float(splits[45])]
-            REye = [float(splits[46]), float(splits[47]), float(splits[48])]
-            LEye = [float(splits[49]), float(splits[50]), float(splits[51])]
-            REar = [float(splits[52]), float(splits[53]), float(splits[54])]
-            LEar = [float(splits[55]), float(splits[56]), float(splits[57])]
-            LBigToe = [float(splits[58]), float(splits[59]), float(splits[60])]
-            LSmallToe = [float(splits[61]), float(splits[62]), float(splits[63])]
-            LHeel = [float(splits[64]), float(splits[65]), float(splits[66])]
-            RBigToe = [float(splits[67]), float(splits[68]), float(splits[69])]
-            RSmallToe = [float(splits[70]), float(splits[71]), float(splits[72])]
-            RHeel = [float(splits[73]), float(splits[74]), float(splits[75])]
+        # tryDraw( Person, "leftHead", [ Nose, LEye, LEar ], color_person[Person])
+        # tryDraw( Person, "rightHead", [ Nose, REye, REar ], color_person[Person])
+        # tryDraw( Person, "torso", [ Nose, Neck, MidHip ], color_person[Person])
+        # tryDraw( Person, "leftArm", [ Neck, LShoulder, LElbow, LWrist ], color_person[Person])
+        # tryDraw( Person, "rightArm", [ Neck, RShoulder, RElbow, RWrist ], color_person[Person])
+        # tryDraw( Person, "leftLeg", [ MidHip, LHip, LKnee, LAnkle ], color_person[Person])
+        # tryDraw( Person, "rightLeg", [ MidHip, RHip, RKnee, RAnkle ], color_person[Person])
+        # tryDraw( Person, "leftFoot", [ LHeel, LAnkle, LBigToe, LSmallToe ], color_person[Person])
+        # tryDraw( Person, "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], color_person[Person])
 
-            # tryDraw( Person, "leftHead", [ Nose, LEye, LEar ], color_person[Person])
-            # tryDraw( Person, "rightHead", [ Nose, REye, REar ], color_person[Person])
-            # tryDraw( Person, "torso", [ Nose, Neck, MidHip ], color_person[Person])
-            # tryDraw( Person, "leftArm", [ Neck, LShoulder, LElbow, LWrist ], color_person[Person])
-            # tryDraw( Person, "rightArm", [ Neck, RShoulder, RElbow, RWrist ], color_person[Person])
-            # tryDraw( Person, "leftLeg", [ MidHip, LHip, LKnee, LAnkle ], color_person[Person])
-            # tryDraw( Person, "rightLeg", [ MidHip, RHip, RKnee, RAnkle ], color_person[Person])
-            # tryDraw( Person, "leftFoot", [ LHeel, LAnkle, LBigToe, LSmallToe ], color_person[Person])
-            # tryDraw( Person, "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], color_person[Person])
+        tryDraw( Person, "leftHead", [ Nose, LEye, LEar ], "#280B68" )
+        tryDraw( Person, "rightHead", [ Nose, REye, REar ], "#740C66" )
+        tryDraw( Person, "torso", [ Nose, Neck, MidHip ], "#790A07" )
+        tryDraw( Person, "leftArm", [ Neck, LShoulder, LElbow, LWrist ], "#429A1D" )
+        tryDraw( Person, "rightArm", [ Neck, RShoulder, RElbow, RWrist ], "#818525" )
+        tryDraw( Person, "leftLeg", [ MidHip, LHip, LKnee, LAnkle ], "#113887" )
+        tryDraw( Person, "rightLeg", [ MidHip, RHip, RKnee, RAnkle ], "#1B9E92" )
+        tryDraw( Person, "leftFoot", [ LHeel, LAnkle, LBigToe, LSmallToe ], "#FFFFFF" ) #"#0A0769"
+        tryDraw( Person, "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], "#FFFFFF" ) #"#0A0769"
 
-            tryDraw( Person, "leftHead", [ Nose, LEye, LEar ], "#280B68" )
-            tryDraw( Person, "rightHead", [ Nose, REye, REar ], "#740C66" )
-            tryDraw( Person, "torso", [ Nose, Neck, MidHip ], "#790A07" )
-            tryDraw( Person, "leftArm", [ Neck, LShoulder, LElbow, LWrist ], "#429A1D" )
-            tryDraw( Person, "rightArm", [ Neck, RShoulder, RElbow, RWrist ], "#818525" )
-            tryDraw( Person, "leftLeg", [ MidHip, LHip, LKnee, LAnkle ], "#113887" )
-            tryDraw( Person, "rightLeg", [ MidHip, RHip, RKnee, RAnkle ], "#1B9E92" )
-            tryDraw( Person, "leftFoot", [ LHeel, LAnkle, LBigToe, LSmallToe ], "#FFFFFF" ) #"#0A0769"
-            tryDraw( Person, "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], "#FFFFFF" ) #"#0A0769"
-
-            # print("COCO : " + Person + ""+ str((time.time()-before)*1000) + "ms")
-            prev = time.time()
-
-client= paho.Client()
-
-######Bind function to callback
+################## MQTT Init ##################
+client = paho.Client()
 client.on_connect=on_connect
 client.on_message=on_message
-#####
-print("connecting to broker ",broker)
-client.connect(broker)
-#connect
-client.loop_start() #start loop to process received messages
+
+################## MQTT Connect ##################
+print("Connecting to broker: ", SERVER_ADDR)
+client.connect(SERVER_ADDR)
+client.loop_start() # start loop to process received messages
 
 while True:
-    # do nothing
+    # refactorDraw( "Person0", "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], "#FFFFFF" ) #"#0A0769"
     time.sleep(0.1)
 
 client.disconnect() #disconnect
