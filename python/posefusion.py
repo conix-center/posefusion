@@ -13,11 +13,15 @@ from datetime import datetime
 import calibration
 
 # Global constants
+
+# MQTT
 SERVER_ADDR     = "oz.andrew.cmu.edu"
-TOPIC_3D        = "/topic/skeleton"
+TOPIC_3D        = "/posefusion/skeleton"
 TOPIC_POSE      = "/lambda/+/pose"
 TOPIC_CAMERA    = "/posefusion/camera/"
 CLIENT_ID       = "posefusion"
+
+# Paths
 MATRICES_PATH   = "matrices.xml"
 PROJS_PATH      = "../../results/projections.npz"
 INTRINSICS_PATH = "calib1.npz"
