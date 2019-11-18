@@ -32,7 +32,7 @@ def on_connect(client, userdata, flags, rc):
 
 if __name__ == '__main__':
 
-    path = "../results/"
+    path = "../../results/"
     file = sys.argv[1]
     print(file)
 
