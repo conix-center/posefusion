@@ -10,6 +10,10 @@ TOPIC_CAMERA    = "/posefusion/camera/+"
 draw_path = "/topic/openpose"
 scene = "openpose"
 
+x_offset = 3
+y_offset = 0 # 3
+z_offset = -1.5
+
 last_ts_person = {}
 for i in range(5):
     last_ts_person["Person" +str(i)] = 0
@@ -37,7 +41,7 @@ def refreshArena():
 
     for key, val in last_ts_person.items():
         # If last data received more than 1 one second then remove that person from Arena
-        if ((t_now - val) > 1):
+        if ((t_now - val) > 1) and (val != 0):
             refactorDraw( key, "leftHead", [], "#280B68", 'delete')
             refactorDraw( key, "rightHead", [], "#740C66", 'delete')
             refactorDraw( key, "torso", [], "#790A07", 'delete')
@@ -50,12 +54,55 @@ def refreshArena():
             drawPersonText(key,"", [0, 0, 0], "#FFFFFF", action='delete')
             last_ts_person[key] = 0
 
+def drawLine(person,bodypart,arr, color, action='create'):
+    # partID
+    partID = person+'_'+bodypart
+
+    # Generate message
+    message = {}
+    message['object_id'] = 'thickline_' + partID
+    message['action'] = action
+    message['type'] = 'object'
+
+    # TODO: Check if body part is 0 (should not draw that part)
+    # If action is create or update generate data part of the message
+    if ((action == 'create') or (action == 'update')):
+        data_str = ""
+        # Iterate through each body part
+        for i in range(len(arr)):
+            x = arr[i][0]
+            y = arr[i][1]
+            z = arr[i][2]
+            data_str += str(x) + " " + str(y) + " " + str(z) + ", "
+        data_str = data_str[:-2] # remove last comma
+
+        # print(data_str)
+
+        data = {}
+        data['object_type'] = 'thickline'
+        data['lineWidth'] = 11
+        data['color'] = color # '#FF88EE'
+        data['path'] =  data_str # '0 0 0, 1 0 0, 1 1 0, 1 1 1'
+
+        # data_cont = {}
+        # data_cont['meshline'] = data
+
+        message['data'] = data
+
+    # Generate JSON
+    json_data = json.dumps(message)
+    
+
+    # Publish message
+    new_draw_path = "realm/s/" + scene + "/"
+    client.publish(new_draw_path + message['object_id'], json_data)
+
 
 def refactorDraw(person,bodypart,arr, color, action='create'):
     # partID
     partID = person+'_'+bodypart
 
-    if (last_ts_person[person] != 0):
+    if (last_ts_person[person] != 0) and (action != 'delete'):
         action = 'update'
 
     # Generate message
@@ -71,14 +118,14 @@ def refactorDraw(person,bodypart,arr, color, action='create'):
         # Iterate through each body part
         for i in range(len(arr)):
             if (arr[i][0] != 0) and (arr[i][1] != 0) and (arr[i][2] != 0):
-                x = -arr[i][0]
-                y = 2-arr[i][1]
-                z = arr[i][2]
+                x = x_offset-arr[i][0]
+                y = y_offset-arr[i][1]
+                z = z_offset+arr[i][2]
                 data_str += str(x) + " " + str(y) + " " + str(z) + ", "
         data_str = data_str[:-2] # remove last comma
 
         data = {}
-        data['object_type'] = 'thickline'
+        # data['object_type'] = 'thickline'
         data['lineWidth'] = 11
         data['color'] = color # '#FF88EE'
         data['path'] =  data_str # '0 0 0, 1 0 0, 1 1 0, 1 1 1'
@@ -112,19 +159,20 @@ def drawPersonText(person,bodypart, arr, color, action='create'):
     data['object_type'] = 'text'
     data['color'] = color # '#FF88EE'
     data['text'] = person
+    data['text.font'] = 'roboto'
 
     # import ipdb; ipdb.set_trace()
 
     position = {}
-    position['x'] = -arr[0]
-    position['y'] = 2.3-arr[1]
-    position['z'] = arr[2]
+    position['x'] = x_offset-arr[0]
+    position['y'] = y_offset-arr[1]
+    position['z'] = z_offset+arr[2]
     data['position'] = position
 
 
     rotation = {}
     rotation['x'] = 0
-    rotation['y'] = 0
+    rotation['y'] = 90
     rotation['z'] = 0
     rotation['w'] = 1
     data['rotation'] = rotation
@@ -273,8 +321,16 @@ def on_message(client, userdata, message):
         refactorDraw( Person, "leftFoot", [ LHeel, LAnkle, LBigToe, LSmallToe ], "#FFFFFF" ) #"#0A0769"
         refactorDraw( Person, "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], "#FFFFFF" ) #"#0A0769"
 
-        drawPersonText(Person, "name", Neck, "red")
+        drawPersonText(Person, "name", LEar, "red")
         last_ts_person[Person] = time.time()
+
+        drawLine("Ref_line","line1",[[0, 0, 0], [0, 2, 0]], "#000000", action='create')
+        drawLine("Ref_line","line2",[[1, 0, 0], [1, 2, 0]], "#000000", action='create')
+        drawLine("Ref_line","line3",[[0, 0, 1], [0, 2, 1]], "#000000", action='create')
+        drawLine("Ref_line","line4",[[1, 0, 1], [1, 2, 1]], "#000000", action='create')
+
+
+
 
 ################## MQTT Init ##################
 client = paho.Client()
