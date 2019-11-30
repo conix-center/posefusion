@@ -29,22 +29,23 @@ INTRINSICS_PATH = "calib1.npz"
 # Global parameters
 # Configuation
 MAX_NUM_PEOPLE  = 20
-NUM_CAMERAS     = 3
+NUM_CAMERAS     = 2
 REF_CAM         = 0
 CONF_SCORE      = 0.6
+USE_CHECKERBOARD = False
 
 # Calibration
 LOAD_PROJS      = True
-MIN_BODY_CALIB  = 1000
+MIN_BODY_CALIB  = 500
 
 # Reconstruction
-ERR_THRESHOLD   = 30000
+ERR_THRESHOLD   = 5000 #100 # 5000
 FRAME_AVERAGING = 1
 MIN_BODY_POINTS = 50
 
 # Globals
 running = False
-received_data = [False, False, False]
+received_data = [False] * NUM_CAMERAS
 calib_done = False
 
 '''
@@ -90,9 +91,19 @@ def repro_error(pts4D, proj0, proj1, pt1, pt2):
     
     # Obtain error for each point 
     error2 = np.sqrt(np.sum((pt2_est-pt2.T)**2, axis=1))
+
+    # print("error")
+    # print(error[1])
+
+    # print("error2")
+    # print(error2[1])
     
     sum_per_part = (error + error2) / 2
+    # sum_per_part = error2
     total = np.sum(sum_per_part)
+
+    # New neck
+    # total = (error[1] + error[2])/2
     
     return total, sum_per_part
 
@@ -259,20 +270,22 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     pts3D = pts4D[:, :3]/np.repeat(pts4D[:, 3], 3).reshape(-1, 3)
 
 
-    neck_hip = distance_points(pts3D[1], pts3D[8])
+    # neck_hip = distance_points(pts3D[1], pts3D[8])
     # print(neck_hip)
     # Normalize
-    pts3D = pts3D[:, :3] / (neck_hip*1.2)
-    # print(pts3D[11,1])
+    # TURN ON TO GET BODY NORMALIZED
+    # pts3D = pts3D[:, :3] / (neck_hip*1.2)
+    # pts3D = pts3D[:, :3] / 0.5
 
     # Find mean y position foot
-    mean_foot = np.mean(pts3D[[11, 14, 19, 20, 21, 22, 23, 24],1])
+    # mean_foot = np.mean(pts3D[[11, 14, 19, 20, 21, 22, 23, 24],1])
     # print(pts3D[[11, 14, 19, 20, 21, 22, 23, 24],1])
     # print(mean_foot)
 
-    # pts3D[:,1] -= pts3D[11,1]
-    # Put person on ground
-    pts3D[:,1] -= mean_foot
+    # TURN ON to put person on ground
+    # pts3D[:,1] -= mean_foot
+    # pts3D[:,1] -= 2
+
 
     # Normalize 4D
     pts4D = pts4D[:, :4]/np.repeat(pts4D[:, 3], 4).reshape(-1, 4)
@@ -295,7 +308,21 @@ def convertTo3DPoints(ref_cam, number_cameras):
     num_body_ok = 0
              
     list_cams = list(range(number_cameras))
+
+    # Dictionary containing the list of bodies in each camera
+    bodies_id_cam = {}
+    for cam in list_cams:
+        bodies_id_cam[cam] = list(range(get_num_body_camera(cam)))
+
+    print(bodies_id_cam)
+
     list_cams.remove(ref_cam)
+
+
+
+    # Test
+    # list_cams.remove(1)
+    # print("list_cams: ", list_cams)
 
     list_cam_chosen = []
     
@@ -304,18 +331,26 @@ def convertTo3DPoints(ref_cam, number_cameras):
     
     # Hold the 3D coordinates after triangulation
     saved3DCoordinates = np.empty((25, 3, num_bodies_ref_cam))
+
+
+    not_equal = False
+
+    if (bodies_id_cam[0] != bodies_id_cam[1]):
+            not_equal = True
     
     # Go through each body in camera 0
-    for body_num_cam_ref in range(num_bodies_ref_cam):
+    for body_num_cam_ref in bodies_id_cam[ref_cam]:
         error = 10000000000
         send = False
         first_points = dataPoints[ref_cam, :, :, body_num_cam_ref]
         for camera_num in list_cams:
-            for body_num in range(get_num_body_camera(camera_num)):
+            for body_num in bodies_id_cam[camera_num]:
                 # Triangulate points
                 second_points = dataPoints[camera_num, :, :, body_num]
                 new_error, error_mat, pts3D = triangulateTwoBodies(projs[ref_cam], projs[camera_num], first_points, second_points)
                 # print(camera_num, body_num_cam_ref, body_num, new_error)
+                # print(first_points[3], second_points[3])
+                print("BNUM_REF {}, CAM{}, BNUM {}, {}".format(body_num_cam_ref, camera_num, body_num, new_error))
                 
                 # If triangulation error is less than the previous and the max threshold, send it
                 if ((new_error < error) and (new_error < ERR_THRESHOLD)):
@@ -325,14 +360,24 @@ def convertTo3DPoints(ref_cam, number_cameras):
                     body_num_chosen = body_num
                     error = new_error
 
+
         if (send):
-            # print("[{}]: cam{}, body{}, error:{}".format(body_num_cam_ref, cam_chosen, body_num_chosen, error))
+            print("[{}]: cam{}, body{}, error:{}".format(body_num_cam_ref, cam_chosen, body_num_chosen, error))
             list_cam_chosen.append(cam_chosen)
             num_body_ok += 1
-            
+            # Fix same person
+            bodies_id_cam[cam_chosen].remove(body_num_chosen) 
+
     # Fill data Points with 0
     dataPoints.fill(0)
-        
+
+    # if (not_equal):
+    #         saved3DCoordinates = np.empty((25, 3, num_bodies_ref_cam))
+    #         num_body_ok = 0
+    #         list_cam_chosen = []
+
+    print("_____________________")
+
     return saved3DCoordinates, num_body_ok, list_cam_chosen
 
 '''
@@ -426,10 +471,14 @@ def on_message(client, userdata, msg):
 
             # Store data in appropriate array if the calibration is done and confidence score large enough
             if (calib_done == True):
+                # print(lambda_id, ts, person_id)
                 if (score > CONF_SCORE):
+                    if (running):
+                        print("----------------------ALERT RUNNING")
                     dataPoints[lambda_id-1, :, :, int(person_id)] = arr
     # Synchronization frame
     else:
+        # print(lambda_id, rcv_msg)
         dataPoints[lambda_id-1].fill(0)
 
     # print("{}, {}, {}".format(ts, lambda_id, person_id))
@@ -502,8 +551,8 @@ if __name__ == '__main__':
         client.loop(0.1)
     print("Collect data finished")
 
-    np.savez("../../results/pts_calib.npz", pts_calib0=pts_calib[0],pts_calib1=pts_calib[1],pts_calib2=pts_calib[2], date=int(time.time()))
-    np.savez("../../results/time_calib.npz", time_calib0=time_calib[0],time_calib1=time_calib[1],time_calib2=time_calib[2], date=int(time.time()))
+    # np.savez("../../results/pts_calib.npz", pts_calib0=pts_calib[0],pts_calib1=pts_calib[1],pts_calib2=pts_calib[2], date=int(time.time()))
+    # np.savez("../../results/time_calib.npz", time_calib0=time_calib[0],time_calib1=time_calib[1],time_calib2=time_calib[2], date=int(time.time()))
 
     # Create empty numpy array to hold projection matrices
     projs = np.empty((NUM_CAMERAS, 3, 4))
@@ -533,7 +582,8 @@ if __name__ == '__main__':
         np.savez(PROJS_PATH, num_cameras = NUM_CAMERAS, K1=K1, K2=K2, projs=projs, m_matrices = m_matrices,date=int(time.time()))
 
     # Read matrices.xml
-    # projs = read_matrices(MATRICES_PATH)
+    if (USE_CHECKERBOARD):
+        projs = read_matrices(MATRICES_PATH)
 
     ################## INITIALIZATION BEFORE ALGORITHM ################## 
     # Hold people coordinates
@@ -549,23 +599,16 @@ if __name__ == '__main__':
     for i in range(MAX_NUM_PEOPLE):
         id_mapping[i] = i
 
-
-    # print(0, m_matrices[0, :, -1])
-    # print(1, m_matrices[1, :, -1])
-    # print(2, m_matrices[2, :, -1])
-
-    # print(0, projs[0])
-    # print(1, projs[1])
-    # print(2, projs[2])
-
-    # print(1, m_matrices[1, :, -1])
-    # print(2, m_matrices[2, :, -1])
-
     # MQTT loop
     while True:
+        # Condition to start triangulation
+        start_triangulate = all(received_data) # Data have been received from each cameras
+
         # Triangulate
-        if (received_data[0] and received_data[1] and received_data[2]):
-            received_data[0] = received_data[1] = received_data[2] = False
+        if (start_triangulate):
+            # Reset array that stores whether data were received for a particular lambda
+            received_data = [False] * NUM_CAMERAS
+
             if (not running):
                 # Make sure we don't run that algorithm conccurently
                 running = True
@@ -576,12 +619,14 @@ if __name__ == '__main__':
 
                 # 1. Obtain 3D coordinates of people using triangulation
                 points3D, numBodies, list_cam_chosen = convertTo3DPoints(REF_CAM, NUM_CAMERAS)
-                if (len(list_cam_chosen)):
-                        print(list_cam_chosen)
+
+                # if (len(list_cam_chosen)):
+                        # print(list_cam_chosen)
 
                 # 2. Filter new body that arrived
-                for body_num in range(numBodies):
-                    filter_body(points3D[:,:,body_num])
+                # for body_num in range(numBodies):
+                    # filter_body(points3D[:,:,body_num])
+
 
                 # 3. Find new mapping of people id
                 # id_mapping, prev3DPoints = find_new_mapping(prev3DPoints, points3D, numBodies, id_mapping)
@@ -602,28 +647,22 @@ if __name__ == '__main__':
                         # Count number of zero elements in the points3D
                         nz = np.count_nonzero(points3D[:,:,id_mapping[person]])
                         if (nz > MIN_BODY_POINTS):
-                            # print("Person " + str(person) +  "[" +str(id_mapping[person]) + "]: non-zeros parts = " + str(nz) + "---------SENDING")
                             print("[{}] Person{}[{}]: NZ parts = {} ------------- SENDING".format(time.time(), person, id_mapping[person], nz))
                             client.publish(TOPIC_3D, publish_person(points3D[:,:,id_mapping[person]], person)) 
-                            # print(points3D[:,:,id_mapping[person]])
+
+                            # ipdb.set_trace()
                         else:
-                            # print("Person " + str(person) +  "[" +str(id_mapping[person]) + "]: non-zeros parts = " + str(nz))
                             print("Person{}[{}]: NZ parts = {}".format(person, id_mapping[person], nz))
-                        # prev3DPoints[:,:,person].fill(0)
 
 
-                # Send zeros for the rest of the bodies
                 if (frame == FRAME_AVERAGING):
-                    for b in range(numBodies, 6):
-                        emp = np.zeros((25, 3))
-                        # client.publish(TOPIC_3D, publish_person(emp, b))
                     frame = 0
                 else:
                     frame +=1
 
                 # Replace previous points with new points and 0 for the rest
                 for person in range(numBodies):
-                    prev3DPoints[:,:,person] = prev[:,:,person]
+                    # prev3DPoints[:,:,person] = prev[:,:,person]
                     prev3DPoints[:,:,person] = points3D[:,:,person]
                 for person in range(numBodies, MAX_NUM_PEOPLE):
                     prev3DPoints[:,:,person].fill(0)
