@@ -50,6 +50,8 @@ received_data = [False] * NUM_CAMERAS
 num_skels_before_transform = 0
 R = 0 # Rotation matrix for second stereo pair
 t = 0 # Translation vector for second stereo pair
+scale =  1 # Scale scalar for second stereo pair
+y_offset = 0
 
 # Flags
 running = False
@@ -305,6 +307,8 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
 
 def get3DPointsStereo(camera1, camera2):
 
+    global y_offset
+
     num_bodies_cam1 = get_num_body_camera(camera1)
     num_bodies_cam2 = get_num_body_camera(camera2)
 
@@ -331,14 +335,15 @@ def get3DPointsStereo(camera1, camera2):
         first_points = dataPoints[camera1, :, :, body_cam1_dict[body][0]]
         second_points = dataPoints[camera2, :, :, body_cam2_dict[body][0]]
         new_error, error_mat, pts3D = triangulateTwoBodies(projs[camera1], projs[camera2], first_points, second_points)
-        print("[{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
+        # print("[{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
         if (new_error < ERR_THRESHOLD):
-            print("GOOD [{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
+            # print("GOOD [{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
+            # Adjust y to put person on the ground if reference stereo camera
+            if (camera1 == 0):
+                pts3D[:,1] -= y_offset
             saved3DCoordinates[:,:,body] = pts3D
 
     return saved3DCoordinates, num_bodies_cam1
-
-    # new_error, error_mat, pts3D = triangulateTwoBodies(projs[ref_cam], projs[camera_num], first_points, second_points)
 
 # http://nghiaho.com/?page_id=671
 # https://github.com/nghiaho12/rigid_transform_3D/blob/master/rigid_transform_3D.py
@@ -387,84 +392,106 @@ def rigid_transform_3D(A, B):
 
     return R, t
 
+def transformBody(body, R, t, scale = 1):
+    scaled_body = body * scale
+    transformed_body = (R @ scaled_body) + np.tile(t, (1, 25)).reshape(3, 25)
+    return transformed_body
 
+# Function to obtain 3D skeletons using multiple stereo cameras
 def convertTo3DPointsStereo(ref_cam, number_cameras):    
-
     global transform_computed
     global num_skels_before_transform
     global R
     global t
-
-    # Pointless
-    list_cam_chosen = []
+    global y_offset
+    global scale
     
-    # FIRST PAIR
+    # Obtain 3D skeletons from first stereo (cam0-cam1)
     set1_3DCoordinates, num_body_set1 = get3DPointsStereo(0, 1)
     body_list_set1 = list(range(num_body_set1))
 
-    # Second PAIR
+    # Obtain 3D skeletons from second stereo (cam2-cam3)
     set2_3DCoordinates, num_body_set2 = get3DPointsStereo(2, 3)
     body_list_set2 = list(range(num_body_set2))
 
-    # Total number of 3D skeleton
+    # Total number of 3D skeleton across both cameras
     total_skels = num_body_set1 + num_body_set2
 
-    max_body_cam = max(num_body_set1, num_body_set2)
-
+    # Will store 3D skeletons after fusion between the two stereo pairs
     saved3DCoordinates = np.empty((25, 3, total_skels*2))
     body_valid = 0
 
+    # If R, t have not be found, compute them
     if (transform_computed == False) and (num_skels_before_transform == MIN_NUM_SKELS):
-        A = set1_3DCoordinates[:, :, 0].T
-        B = set2_3DCoordinates[:, :, 0].T
-        R, t = rigid_transform_3D(A, B)
-        np.savez(AFFINE_PATH, R = R, t=t, date=int(time.time()))
-        # ipdb.set_trace()
-        B2 = (R @ A) + np.tile(t, (1, 25)).reshape(3, 25)
-        err = np.sqrt(np.sum((B2 - B) **2)) / 25
+        # Select first 3D skeletons for each stereo
+        skel_1 = set1_3DCoordinates[:, :, 0].T
+        mean_foot = np.mean(skel_1[[11, 14, 19, 20, 21, 22, 23, 24],1])
+        skel_1[:,1] -= mean_foot
+        y_offset = mean_foot
+
+        skel_2 = set2_3DCoordinates[:, :, 0].T
+
+        # Normalize the two skeletons?
+        neck_hip_1 = distance_points(skel_1.T[1], skel_1.T[8])
+        neck_hip_2 = distance_points(skel_2.T[1], skel_2.T[8])
+        scale = neck_hip1 / neck_hip_2
+
+        # Obtain R, t
+        R, t = rigid_transform_3D(skel_1, skel_2)
+
+        # Verify error
+        skel_2_est = transformBody(skel_1, R, t, scale)
+        err = np.sqrt(np.sum((skel_2_est - skel_2) **2)) / 25
         print("3D affine transform error: ", err)
-        ipdb.set_trace()
+
+        # Save it for later
+        np.savez(AFFINE_PATH, R = R, t=t, scale = scale, y_offset = y_offset, err=err, date=int(time.time()))
+
+        # Set transform_computed flag to True
         transform_computed = True
+    # Perform fusion of skeletons from different stereos
     elif (transform_computed == True):
         # Send any skeletons from the first camera pair
         for body_set1 in body_list_set1:
+            # If body_set1 and body_set2 similar, draw best one and remove from list
             for body_set2 in body_list_set2:
-                # If body_set1 and body_set2 similar, draw best one and remove from list
+                # Select person from first stereo
                 person_set1 = set1_3DCoordinates[:, :, body_set1]
+
+                # Transform person from second stereo to match first stereo coordinates
                 A = set2_3DCoordinates[:, :, body_set2].T
-                person_set2 = (R @ A) + np.tile(t, (1, 25)).reshape(3, 25)
-                # saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1]
-                diff = np.sum(person_set1[1]-person_set2.T[1])
-                print("diff: ", diff)
-                # ipdb.set_trace()
-                if (diff < 10):
+                person_set2_transformed = transformBody(A, R, t, scale)
+
+                # Compute difference of neck position and remove from second list if less than 3
+                diff = np.sum(person_set1[1]-person_set2_transformed.T[1])
+                # print("diff: ", diff)
+                if (diff < 3):
                     body_list_set2.remove(body_set2)
-            
+            # Send skeleon from set1
             saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1]
             body_valid += 1
 
         # Any remaining skeleton from second camera pair
-        print(body_list_set2)
         for body_set2 in body_list_set2:
-            A = set2_3DCoordinates[:, :, body_set2].T
+            person_set2 = set2_3DCoordinates[:, :, body_set2].T
             if (transform_computed):
-                B2 = (R @ A) + np.tile(t, (1, 25)).reshape(3, 25)
-                saved3DCoordinates[:,:,body_valid] = B2.T
-                # saved3DCoordinates[:,:,body_valid] = A.T
+                person_set2_transformed = transformBody(person_set2, R, t, scale)
+                saved3DCoordinates[:,:,body_valid] = person_set2_transformed.T
             else:
-                saved3DCoordinates[:,:,body_valid] = A.T
+                saved3DCoordinates[:,:,body_valid] = person_set2.T
             body_valid += 1
 
+    # Used to keep track of when to find R, t
     num_skels_before_transform += 1
-
 
     # Fill data Points with 0
     dataPoints.fill(0)
 
+    # In case the number of people is greater than MAX_NUM_PEOPLE supported (wrong fusion), don't send anything
     if (body_valid >= MAX_NUM_PEOPLE):
         body_valid = 0
 
-    return saved3DCoordinates, body_valid, list_cam_chosen
+    return saved3DCoordinates, body_valid
 
 '''
 convertTo3DPoints: given a set of 2D coordinates cameras, find best 3D reconstruction.
@@ -658,7 +685,6 @@ def on_message(client, userdata, msg):
                     dataPoints[lambda_id-1, :, :, int(person_id)] = arr
     # Synchronization frame
     else:
-        # print(lambda_id, rcv_msg)
         dataPoints[lambda_id-1].fill(0)
 
     # print("{}, {}, {}".format(ts, lambda_id, person_id))
@@ -775,6 +801,13 @@ if __name__ == '__main__':
         affine = np.load(AFFINE_PATH)
         R = affine["R"]
         t = affine["t"]
+        scale = affine["scale"]
+        y_offset = affine["y_offset"]
+        print("Error from loaded affine transform: ", affine["err"])
+        print("R", R)
+        print("t", t)
+        print("scale", scale)
+        print("y_offset", y_offset)
 
     ################## INITIALIZATION BEFORE ALGORITHM ################## 
     # Hold people coordinates
@@ -812,10 +845,7 @@ if __name__ == '__main__':
                 # Old system
                 # points3D, numBodies, list_cam_chosen = convertTo3DPoints(REF_CAM, NUM_CAMERAS)
                 # Stereo
-                points3D, numBodies, list_cam_chosen = convertTo3DPointsStereo(REF_CAM, NUM_CAMERAS)
-
-                # if (len(list_cam_chosen)):
-                        # print(list_cam_chosen)
+                points3D, numBodies = convertTo3DPointsStereo(REF_CAM, NUM_CAMERAS)
 
                 # 2. Filter new body that arrived
                 # for body_num in range(numBodies):
