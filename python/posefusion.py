@@ -13,7 +13,6 @@ from datetime import datetime
 import calibration
 
 # Global constants
-
 # MQTT
 SERVER_ADDR     = "oz.andrew.cmu.edu"
 TOPIC_3D        = "/posefusion/skeleton"
@@ -24,29 +23,39 @@ CLIENT_ID       = "posefusion"
 # Paths
 MATRICES_PATH   = "matrices.xml"
 PROJS_PATH      = "../../results/projections.npz"
+AFFINE_PATH      = "../../results/affine.npz"
 INTRINSICS_PATH = "calib1.npz"
 
 # Global parameters
 # Configuation
 MAX_NUM_PEOPLE  = 20
-NUM_CAMERAS     = 2
-REF_CAM         = 0
-CONF_SCORE      = 0.6
-USE_CHECKERBOARD = False
+NUM_CAMERAS     = 4   # (2 stereos = 2 * 2 cameras = 4)
+REF_CAM         = 0   # Stereo pair of referencce (0 is for camera0-camera1)
+CONF_SCORE      = 0.6 # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
 
 # Calibration
-LOAD_PROJS      = True
-MIN_BODY_CALIB  = 500
+RUN_CALIBRATION = False  # If set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used
+MIN_BODY_CALIB  = 500   # Number of skeletons to collect during autocalibration to obtain projection matrices
+USE_CHECKERBOARD = False
+STEREO = True
+MIN_NUM_SKELS = 50
 
 # Reconstruction
-ERR_THRESHOLD   = 5000 #100 # 5000
-FRAME_AVERAGING = 1
-MIN_BODY_POINTS = 50
+ERR_THRESHOLD   = 5000
+FRAME_AVERAGING = 1     # Number of frames to average
+MIN_BODY_POINTS = 50    # Minimun number of body points that are non-zero to sent skeleton to ARENA
 
 # Globals
-running = False
 received_data = [False] * NUM_CAMERAS
+num_skels_before_transform = 0
+R = 0 # Rotation matrix for second stereo pair
+t = 0 # Translation vector for second stereo pair
+
+# Flags
+running = False
 calib_done = False
+transform_computed = False
+
 
 '''
 read_matrices: Read projection matrices from the specified file path in a numpy array of 
@@ -91,15 +100,8 @@ def repro_error(pts4D, proj0, proj1, pt1, pt2):
     
     # Obtain error for each point 
     error2 = np.sqrt(np.sum((pt2_est-pt2.T)**2, axis=1))
-
-    # print("error")
-    # print(error[1])
-
-    # print("error2")
-    # print(error2[1])
     
     sum_per_part = (error + error2) / 2
-    # sum_per_part = error2
     total = np.sum(sum_per_part)
 
     # New neck
@@ -270,11 +272,18 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     pts3D = pts4D[:, :3]/np.repeat(pts4D[:, 3], 3).reshape(-1, 3)
 
 
-    # neck_hip = distance_points(pts3D[1], pts3D[8])
-    # print(neck_hip)
-    # Normalize
-    # TURN ON TO GET BODY NORMALIZED
+    # if (transform_computed == True):
+    #     neck_hip = distance_points(pts3D[1], pts3D[8])
+    #     # print(neck_hip)
+    #     # Normalize
+    #     # TURN ON TO GET BODY NORMALIZED
+    #     optimal_dist = 1
+    #     factor = optimal_dist / neck_hip
+    #     pts3D = pts3D[:, :3] * factor
+
+
     # pts3D = pts3D[:, :3] / (neck_hip*1.2)
+
     # pts3D = pts3D[:, :3] / 0.5
 
     # Find mean y position foot
@@ -293,6 +302,169 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     # Get error
     error, error_mat = repro_error(pts4D, camera_1, camera_2, pt1, pt2)
     return error, error_mat, pts3D
+
+def get3DPointsStereo(camera1, camera2):
+
+    num_bodies_cam1 = get_num_body_camera(camera1)
+    num_bodies_cam2 = get_num_body_camera(camera2)
+
+    # Hold the 3D coordinates after triangulation
+    saved3DCoordinates = np.zeros((25, 3, num_bodies_cam1))
+
+    if (num_bodies_cam1 != num_bodies_cam2) or (num_bodies_cam1 == 0):
+        return saved3DCoordinates, 0
+
+    # Sort bodies left to right
+    # Camera1
+    body_cam1_dict = {}
+    for body in range(num_bodies_cam1):
+        body_cam1_dict[body] = dataPoints[camera1, :, :, body][1, 0]
+    body_cam1_dict = sorted(body_cam1_dict.items(), key=lambda x: x[1])
+    # Camera2
+    body_cam2_dict = {}
+    for body in range(num_bodies_cam2):
+        body_cam2_dict[body] = dataPoints[camera2, :, :, body][1, 0]
+    body_cam2_dict = sorted(body_cam2_dict.items(), key=lambda x: x[1])
+
+    # Perform triangulation
+    for body in range(num_bodies_cam1):
+        first_points = dataPoints[camera1, :, :, body_cam1_dict[body][0]]
+        second_points = dataPoints[camera2, :, :, body_cam2_dict[body][0]]
+        new_error, error_mat, pts3D = triangulateTwoBodies(projs[camera1], projs[camera2], first_points, second_points)
+        print("[{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
+        if (new_error < ERR_THRESHOLD):
+            print("GOOD [{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
+            saved3DCoordinates[:,:,body] = pts3D
+
+    return saved3DCoordinates, num_bodies_cam1
+
+    # new_error, error_mat, pts3D = triangulateTwoBodies(projs[ref_cam], projs[camera_num], first_points, second_points)
+
+# http://nghiaho.com/?page_id=671
+# https://github.com/nghiaho12/rigid_transform_3D/blob/master/rigid_transform_3D.py
+# Input: expects 3xN matrix of points
+# Returns R,t
+# R = 3x3 rotation matrix
+# t = 3x1 column vector
+
+def rigid_transform_3D(A, B):
+    assert len(A) == len(B)
+
+    num_rows, num_cols = A.shape;
+
+    if num_rows != 3:
+        raise Exception("matrix A is not 3xN, it is {}x{}".format(num_rows, num_cols))
+
+    [num_rows, num_cols] = B.shape;
+    if num_rows != 3:
+        raise Exception("matrix B is not 3xN, it is {}x{}".format(num_rows, num_cols))
+
+    # find mean column wise
+    centroid_A = np.mean(A, axis=1)
+    centroid_B = np.mean(B, axis=1)
+
+
+    # subtract mean
+    Am = A - np.tile(centroid_A, (1, num_cols)).reshape(3, num_cols)
+    Bm = B - np.tile(centroid_B, (1, num_cols)).reshape(3, num_cols)
+
+    # ipdb.set_trace()
+
+    # dot is matrix multiplication for array
+    H = Am @ np.transpose(Bm)
+
+    # find rotation
+    U, S, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+
+    # special reflection case
+    if np.linalg.det(R) < 0:
+        print("det(R) < R, reflection detected!, correcting for it ...\n");
+        Vt[2,:] *= -1
+        R = Vt.T @ U.T
+
+    t = -R@centroid_A + centroid_B
+
+    return R, t
+
+
+def convertTo3DPointsStereo(ref_cam, number_cameras):    
+
+    global transform_computed
+    global num_skels_before_transform
+    global R
+    global t
+
+    # Pointless
+    list_cam_chosen = []
+    
+    # FIRST PAIR
+    set1_3DCoordinates, num_body_set1 = get3DPointsStereo(0, 1)
+    body_list_set1 = list(range(num_body_set1))
+
+    # Second PAIR
+    set2_3DCoordinates, num_body_set2 = get3DPointsStereo(2, 3)
+    body_list_set2 = list(range(num_body_set2))
+
+    # Total number of 3D skeleton
+    total_skels = num_body_set1 + num_body_set2
+
+    max_body_cam = max(num_body_set1, num_body_set2)
+
+    saved3DCoordinates = np.empty((25, 3, total_skels*2))
+    body_valid = 0
+
+    if (transform_computed == False) and (num_skels_before_transform == MIN_NUM_SKELS):
+        A = set1_3DCoordinates[:, :, 0].T
+        B = set2_3DCoordinates[:, :, 0].T
+        R, t = rigid_transform_3D(A, B)
+        np.savez(AFFINE_PATH, R = R, t=t, date=int(time.time()))
+        # ipdb.set_trace()
+        B2 = (R @ A) + np.tile(t, (1, 25)).reshape(3, 25)
+        err = np.sqrt(np.sum((B2 - B) **2)) / 25
+        print("3D affine transform error: ", err)
+        ipdb.set_trace()
+        transform_computed = True
+    elif (transform_computed == True):
+        # Send any skeletons from the first camera pair
+        for body_set1 in body_list_set1:
+            for body_set2 in body_list_set2:
+                # If body_set1 and body_set2 similar, draw best one and remove from list
+                person_set1 = set1_3DCoordinates[:, :, body_set1]
+                A = set2_3DCoordinates[:, :, body_set2].T
+                person_set2 = (R @ A) + np.tile(t, (1, 25)).reshape(3, 25)
+                # saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1]
+                diff = np.sum(person_set1[1]-person_set2.T[1])
+                print("diff: ", diff)
+                # ipdb.set_trace()
+                if (diff < 10):
+                    body_list_set2.remove(body_set2)
+            
+            saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1]
+            body_valid += 1
+
+        # Any remaining skeleton from second camera pair
+        print(body_list_set2)
+        for body_set2 in body_list_set2:
+            A = set2_3DCoordinates[:, :, body_set2].T
+            if (transform_computed):
+                B2 = (R @ A) + np.tile(t, (1, 25)).reshape(3, 25)
+                saved3DCoordinates[:,:,body_valid] = B2.T
+                # saved3DCoordinates[:,:,body_valid] = A.T
+            else:
+                saved3DCoordinates[:,:,body_valid] = A.T
+            body_valid += 1
+
+    num_skels_before_transform += 1
+
+
+    # Fill data Points with 0
+    dataPoints.fill(0)
+
+    if (body_valid >= MAX_NUM_PEOPLE):
+        body_valid = 0
+
+    return saved3DCoordinates, body_valid, list_cam_chosen
 
 '''
 convertTo3DPoints: given a set of 2D coordinates cameras, find best 3D reconstruction.
@@ -332,6 +504,8 @@ def convertTo3DPoints(ref_cam, number_cameras):
     # Hold the 3D coordinates after triangulation
     saved3DCoordinates = np.empty((25, 3, num_bodies_ref_cam))
 
+    # TODO: Order people by looking at the neck x coordinate and sort them from left to right
+
 
     not_equal = False
 
@@ -368,13 +542,19 @@ def convertTo3DPoints(ref_cam, number_cameras):
             # Fix same person
             bodies_id_cam[cam_chosen].remove(body_num_chosen) 
 
+    num_bodies_cam1 = get_num_body_camera(0)
+    num_bodies_cam2 = get_num_body_camera(1)
+    if (num_bodies_cam1 == num_bodies_cam2):
+        saved3DCoordinates, num_body_ok = get3DPointsStereo(0, 1)
+    
+
     # Fill data Points with 0
     dataPoints.fill(0)
 
-    # if (not_equal):
-    #         saved3DCoordinates = np.empty((25, 3, num_bodies_ref_cam))
-    #         num_body_ok = 0
-    #         list_cam_chosen = []
+    if (not_equal):
+            saved3DCoordinates = np.empty((25, 3, num_bodies_ref_cam))
+            num_body_ok = 0
+            list_cam_chosen = []
 
     print("_____________________")
 
@@ -535,8 +715,9 @@ if __name__ == '__main__':
     pts_calib = {new_list: [] for new_list in range(NUM_CAMERAS)} 
     time_calib = {new_list: [] for new_list in range(NUM_CAMERAS)} 
 
-    if (LOAD_PROJS == True):
+    if (RUN_CALIBRATION == False):
         calib_done = True
+        transform_computed = True
 
     ################## MQTT Init ################## 
     client = mqtt.Client()
@@ -562,7 +743,7 @@ if __name__ == '__main__':
     K1 = K2 = np.load(INTRINSICS_PATH)["mtx"]     
 
     # Load projection matrices
-    if (LOAD_PROJS == True):
+    if (RUN_CALIBRATION == False):
         prev_projs = np.load(PROJS_PATH)
         dt_object = datetime.fromtimestamp(prev_projs["date"])
         date_time = dt_object.strftime("%m/%d/%Y, %H:%M:%S")
@@ -576,6 +757,11 @@ if __name__ == '__main__':
             print("Camera{}: {} bodies collected".format(camera_num+1, len(pts_calib[camera_num+1])))
             projs[0], projs[camera_num + 1], m_matrices[0], m_matrices[camera_num + 1] = calibration.get_projs_matrices(pts_calib[0], pts_calib[camera_num + 1], K1, K2)
         
+        if (STEREO):
+            for camera_num in range(NUM_CAMERAS-1, 2):
+                # print("Camera{}: {} bodies collected".format(camera_num+1, len(pts_calib[camera_num+1])))
+                projs[camera_num], projs[camera_num + 1], m_matrices[camera_num], m_matrices[camera_num + 1] = calibration.get_projs_matrices(pts_calib[camera_num], pts_calib[camera_num + 1], K1, K2)
+
         # projs[1], projs[0], m_matrices[1], m_matrices[0] = calibration.get_projs_matrices(pts_calib[1], pts_calib[0], K1, K2)
         # projs[1], projs[2], m_matrices[1], m_matrices[2] = calibration.get_projs_matrices(pts_calib[1], pts_calib[2], K1, K2)
         # Save resulting projection matrices
@@ -584,6 +770,11 @@ if __name__ == '__main__':
     # Read matrices.xml
     if (USE_CHECKERBOARD):
         projs = read_matrices(MATRICES_PATH)
+
+    if (transform_computed):
+        affine = np.load(AFFINE_PATH)
+        R = affine["R"]
+        t = affine["t"]
 
     ################## INITIALIZATION BEFORE ALGORITHM ################## 
     # Hold people coordinates
@@ -618,7 +809,10 @@ if __name__ == '__main__':
                     client.publish(TOPIC_CAMERA + str(i), publish_camera(m_matrices[i])) 
 
                 # 1. Obtain 3D coordinates of people using triangulation
-                points3D, numBodies, list_cam_chosen = convertTo3DPoints(REF_CAM, NUM_CAMERAS)
+                # Old system
+                # points3D, numBodies, list_cam_chosen = convertTo3DPoints(REF_CAM, NUM_CAMERAS)
+                # Stereo
+                points3D, numBodies, list_cam_chosen = convertTo3DPointsStereo(REF_CAM, NUM_CAMERAS)
 
                 # if (len(list_cam_chosen)):
                         # print(list_cam_chosen)
