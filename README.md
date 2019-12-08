@@ -67,6 +67,14 @@ python3 ./posefusion/python/skel.py
 ```
 This scripts publishes the skeletons in the /topic/skeleton to the ARENA using thickline objects.
 
+## How does the system work?
+**Pose data collection**
+![Pose data collection](/images/DataCollectDiagram.png)
+
+**Calibration procedure**
+![Calibration procedure](/images/CalibrationDiagram.png)
+
+
 ## Previous system
 **Camera Calibration:**
 On each computer, run 
