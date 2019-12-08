@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import json
 import paho.mqtt.client as mqtt
 import time
-import pandas as pd
-import ipdb
 from datetime import datetime
 
 import calibration
@@ -22,23 +20,20 @@ CLIENT_ID       = "posefusion"
 
 # Paths
 MATRICES_PATH   = "matrices.xml"
-PROJS_PATH      = "../../results/projections.npz"
-AFFINE_PATH      = "../../results/affine.npz"
+PROJS_PATH      = "projections.npz"
+AFFINE_PATH      = "affine.npz"
 INTRINSICS_PATH = "calib1.npz"
 
 # Global parameters
 # Configuation
-MAX_NUM_PEOPLE  = 20
+MAX_NUM_PEOPLE  = 20  # Maximum number of people supported
 NUM_CAMERAS     = 4   # (2 stereos = 2 * 2 cameras = 4)
 REF_CAM         = 0   # Stereo pair of referencce (0 is for camera0-camera1)
 CONF_SCORE      = 0.6 # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
 
 # Calibration
-RUN_CALIBRATION = False  # If set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used
+RUN_CALIBRATION = True  # If set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used
 MIN_BODY_CALIB  = 500   # Number of skeletons to collect during autocalibration to obtain projection matrices
-USE_CHECKERBOARD = False
-STEREO = True
-MIN_NUM_SKELS = 50
 
 # Reconstruction
 ERR_THRESHOLD   = 5000
@@ -46,17 +41,18 @@ FRAME_AVERAGING = 1     # Number of frames to average
 MIN_BODY_POINTS = 50    # Minimun number of body points that are non-zero to sent skeleton to ARENA
 
 # Globals
-received_data = [False] * NUM_CAMERAS
-num_skels_before_transform = 0
-R = 0 # Rotation matrix for second stereo pair
-t = 0 # Translation vector for second stereo pair
-scale =  1 # Scale scalar for second stereo pair
-y_offset = 0
+received_data = [False] * NUM_CAMERAS    # True means that data have been received for that lambda
+num_skels_before_transform = 0           # Keep track of how nmany bodies found before finding the transformation R, t
+R = 0                                    # Rotation matrix for second stereo pair
+t = 0                                    # Translation vector for second stereo pair
+scale =  1                               # Scale scalar for second stereo pair
+y_offset = 0                             # Distance body from reconstruction to ground
+dataPoints = np.empty((NUM_CAMERAS, 25, 2, MAX_NUM_PEOPLE))
 
 # Flags
-running = False
-calib_done = False
-transform_computed = False
+running = False                          # Flag to indicate that triangulation algorithm is running
+calib_done = False                       # Flag to indicate that the calibration procedure is done
+transform_computed = False               # Flag to indicate that the transformation (R, t) was computed
 
 
 '''
@@ -105,9 +101,6 @@ def repro_error(pts4D, proj0, proj1, pt1, pt2):
     
     sum_per_part = (error + error2) / 2
     total = np.sum(sum_per_part)
-
-    # New neck
-    # total = (error[1] + error[2])/2
     
     return total, sum_per_part
 
@@ -121,8 +114,6 @@ def distance_points(p1, p2):
     squared_dist = np.sum((p2-p1)**2, axis = 0)
     dist = np.sqrt(squared_dist)
     return dist
-
-# INTERPOLATE PARTS OF THE BODY IF POSSIBLE!!
 
 '''
 fusion_body: merge two bodies. If the body part of the new body is non zero then the fusioned body
@@ -268,35 +259,18 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     # For each
     pts4D = cv2.triangulatePoints(camera_1, camera_2, pt1, pt2).T
 
-
-
     # Convert from homogeneous coordinates to 3D
     pts3D = pts4D[:, :3]/np.repeat(pts4D[:, 3], 3).reshape(-1, 3)
 
 
-    # if (transform_computed == True):
     #     neck_hip = distance_points(pts3D[1], pts3D[8])
-    #     # print(neck_hip)
-    #     # Normalize
-    #     # TURN ON TO GET BODY NORMALIZED
+
     #     optimal_dist = 1
     #     factor = optimal_dist / neck_hip
     #     pts3D = pts3D[:, :3] * factor
 
 
     # pts3D = pts3D[:, :3] / (neck_hip*1.2)
-
-    # pts3D = pts3D[:, :3] / 0.5
-
-    # Find mean y position foot
-    # mean_foot = np.mean(pts3D[[11, 14, 19, 20, 21, 22, 23, 24],1])
-    # print(pts3D[[11, 14, 19, 20, 21, 22, 23, 24],1])
-    # print(mean_foot)
-
-    # TURN ON to put person on ground
-    # pts3D[:,1] -= mean_foot
-    # pts3D[:,1] -= 2
-
 
     # Normalize 4D
     pts4D = pts4D[:, :4]/np.repeat(pts4D[:, 3], 4).reshape(-1, 4)
@@ -371,9 +345,6 @@ def rigid_transform_3D(A, B):
     centroid_B = np.mean(B, axis=1)
 
     # subtract mean
-    # Am = A - np.tile(centroid_A, (1, num_cols)).reshape(3, num_cols)
-    # Bm = B - np.tile(centroid_B, (1, num_cols)).reshape(3, num_cols)
-
     Am = A - np.tile(centroid_A, (num_cols, 1)).T
     Bm = B - np.tile(centroid_B, (num_cols, 1)).T
 
@@ -425,7 +396,7 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
     body_valid = 0
 
     # If R, t have not be found, compute them
-    if (transform_computed == False) and (num_skels_before_transform == MIN_NUM_SKELS):
+    if (transform_computed == False) and (num_skels_before_transform%50 == 0) and (total_skels == 2):
         # Select first 3D skeletons and filter it
         skel_1 = set1_3DCoordinates[:, :, 0]
         skel_1[skel_1 < -10] = 0
@@ -444,11 +415,11 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
         # Normalize the two skeletons?
         neck_hip_1 = distance_points(skel_1[1], skel_1[8])
         neck_hip_2 = distance_points(skel_2[1], skel_2[8])
-        # scale = neck_hip_1 / neck_hip_2
-        scale = 1
+        scale = neck_hip_1 / neck_hip_2
+        # scale = 1
 
         # Scale second skeleton to size of first before finding the transformation
-        # skel_2 = scale * skel_2
+        skel_2 = scale * skel_2
 
         # Obtain R, t to go from skel_2 to skel_1
         R, t = rigid_transform_3D(skel_2.T, skel_1.T)
@@ -457,6 +428,9 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
         skel_1_est = transformBody(skel_2, R, t, scale)
         err = np.sqrt(np.sum((skel_1_est - skel_1) **2)) / 25
         print("3D affine transform error: ", err)
+        print("R", R)
+        print("t", t)
+        print("scale", scale)
 
         # ipdb.set_trace()
 
@@ -545,11 +519,6 @@ def convertTo3DPoints(ref_cam, number_cameras):
 
     list_cams.remove(ref_cam)
 
-
-
-    # Test
-    # list_cams.remove(1)
-    # print("list_cams: ", list_cams)
 
     list_cam_chosen = []
     
@@ -786,9 +755,6 @@ if __name__ == '__main__':
         client.loop(0.1)
     print("Collect data finished")
 
-    # np.savez("../../results/pts_calib.npz", pts_calib0=pts_calib[0],pts_calib1=pts_calib[1],pts_calib2=pts_calib[2], date=int(time.time()))
-    # np.savez("../../results/time_calib.npz", time_calib0=time_calib[0],time_calib1=time_calib[1],time_calib2=time_calib[2], date=int(time.time()))
-
     # Create empty numpy array to hold projection matrices
     projs = np.empty((NUM_CAMERAS, 3, 4))
     m_matrices = np.empty((NUM_CAMERAS, 3, 4))
@@ -809,26 +775,15 @@ if __name__ == '__main__':
     else:
         print("Running autocalibration")
         # Iterate through each pair of camera
-        # for camera_num in range(NUM_CAMERAS-1):
-            # print("Camera{}: {} bodies collected".format(camera_num+1, len(pts_calib[camera_num+1])))
-            # projs[0], projs[camera_num + 1], m_matrices[0], m_matrices[camera_num + 1] = calibration.get_projs_matrices(pts_calib[0], pts_calib[camera_num + 1], K1, K2)
-        
-        # if (STEREO):
-        # ipdb.set_trace()
         # for camera_num in range(NUM_CAMERAS-1, 2):
         for camera_num in [0, 2]:
             print("Calib cam{}-cam{}".format(camera_num, camera_num+1))
-            # print("Camera{}: {} bodies collected".format(camera_num+1, len(pts_calib[camera_num+1])))
+            print("Camera{}: {} bodies collected".format(camera_num, len(pts_calib[camera_num])))
+            print("Camera{}: {} bodies collected".format(camera_num+1, len(pts_calib[camera_num+1])))
             projs[camera_num], projs[camera_num + 1], m_matrices[camera_num], m_matrices[camera_num + 1] = calibration.get_projs_matrices(pts_calib[camera_num], pts_calib[camera_num + 1], K1, K2)
 
-        # projs[1], projs[0], m_matrices[1], m_matrices[0] = calibration.get_projs_matrices(pts_calib[1], pts_calib[0], K1, K2)
-        # projs[1], projs[2], m_matrices[1], m_matrices[2] = calibration.get_projs_matrices(pts_calib[1], pts_calib[2], K1, K2)
         # Save resulting projection matrices
         np.savez(PROJS_PATH, num_cameras = NUM_CAMERAS, K1=K1, K2=K2, projs=projs, m_matrices = m_matrices,date=int(time.time()))
-
-    # Read matrices.xml
-    # if (USE_CHECKERBOARD):
-        # projs = read_matrices(MATRICES_PATH)
 
     if (transform_computed):
         affine = np.load(AFFINE_PATH)
@@ -844,8 +799,6 @@ if __name__ == '__main__':
 
     ################## INITIALIZATION BEFORE ALGORITHM ################## 
     # Hold people coordinates
-    global dataPoints
-    dataPoints = np.empty((NUM_CAMERAS, 25, 2, MAX_NUM_PEOPLE))
     prev3DPoints = np.empty((25, 3, MAX_NUM_PEOPLE))
 
     # Hold current frame number for averaging
@@ -875,18 +828,13 @@ if __name__ == '__main__':
                     client.publish(TOPIC_CAMERA + str(i), publish_camera(m_matrices[i])) 
 
                 # 1. Obtain 3D coordinates of people using triangulation
-                # Old system
-                # points3D, numBodies, list_cam_chosen = convertTo3DPoints(REF_CAM, NUM_CAMERAS)
-                # Stereo
                 points3D, numBodies = convertTo3DPointsStereo(REF_CAM, NUM_CAMERAS)
 
                 # 2. Filter new body that arrived
                 # for body_num in range(numBodies):
                     # filter_body(points3D[:,:,body_num])
 
-
                 # 3. Find new mapping of people id
-                # id_mapping, prev3DPoints = find_new_mapping(prev3DPoints, points3D, numBodies, id_mapping)
                 id_mapping, prev = find_new_mapping(prev3DPoints, points3D, numBodies, id_mapping)
                 
                 # Publish each body separately
@@ -906,8 +854,6 @@ if __name__ == '__main__':
                         if (nz > MIN_BODY_POINTS):
                             print("[{}] Person{}[{}]: NZ parts = {} ------------- SENDING".format(time.time(), person, id_mapping[person], nz))
                             client.publish(TOPIC_3D, publish_person(points3D[:,:,id_mapping[person]], person)) 
-
-                            # ipdb.set_trace()
                         else:
                             print("Person{}[{}]: NZ parts = {}".format(person, id_mapping[person], nz))
 
@@ -919,14 +865,13 @@ if __name__ == '__main__':
 
                 # Replace previous points with new points and 0 for the rest
                 for person in range(numBodies):
-                    # prev3DPoints[:,:,person] = prev[:,:,person]
                     prev3DPoints[:,:,person] = points3D[:,:,person]
                 for person in range(numBodies, MAX_NUM_PEOPLE):
                     prev3DPoints[:,:,person].fill(0)
 
                 # Done with this funtion
                 running = False
-        # End received frames from three lambdas
+        # End received frames from lambdas
 
         # Get new messages
         client.loop(0.01)
