@@ -12,10 +12,13 @@ Including the dependencies that OpenPose requires, this program also uses the [P
 
 
 ## Installing and Compiling
+These steps must be perform on each of the computer which will be running the program. For example, currently four lambda machines are used so that this setup is done on each of the lambda (1-4).
 1. Install/compile [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose).
 2. Clone **posefusion** into the openpose folder on your computer.
-3. In the file openpose/CMakeLists.txt, write `add_subdirectory(posefusion)`. This should include posefusion in the cmake build.
-4. Compile OpenPose.
+3. Modify the file posefusion/posefusion-client.cpp at line 17 to put the proper CLIENT_ID. It must be unique for each MQTT client. For example for lambda 1 it should be "lambda-1", for lambda 2 "lambda-2" and so on.
+static std::string CLIENT_ID   = "lambda-"; // "lambda-3";
+4. In the file openpose/CMakeLists.txt, write `add_subdirectory(posefusion)`. This should include posefusion in the cmake build.
+5. Compile OpenPose.
 ```
 cd build/
 make -j`nproc`
@@ -25,17 +28,15 @@ make -j`nproc`
 ## Running the Program
 
 **PoseFusion Client**
-
+The PoseFusion client is ran for each camera so if you have four cameras connected to four lambdas, then run the client on each one of the four lambda machines.
 Must be run in the **openpose** folder.
 ```
-./build/posefusion/posefusion-client <lambda_id>
+./build/posefusion/posefusion-client <mqtt_topic_path>
 ```
-This runs the openpose program that gets body pose data from a single RGB camera. The pose then gets published to a MQTT broker. Each computer must be running the client in order for the PoseFusion server to run properly. <lambda_id> can be {1, 2, ...}
-You must also modify the file posefusion/posefusion-client.cpp at line 17 to put the proper CLIENT_ID. It must be unique for each MQTT client. For example for lambda 1 it should be "lambda-1", for lambda 2 "lambda-2" and so on.
-static std::string CLIENT_ID   = "lambda-"; // "lambda-3";
-After having modified this line, runs make in the build folder.
+This runs the openpose program that gets body pose data from a single RGB camera. The pose then gets published to a MQTT broker. Each computer must be running the client in order for the PoseFusion server to run properly. <mqtt_topic_path> can be {1, 2, ...}
 
 **PoseFusion Server**
+The PoseFusion server can be ran from anywhere and only need to be ran on one machine.
 ```
 python3 ./posefusion/python/posefusion.py
 ```
