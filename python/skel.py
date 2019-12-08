@@ -11,7 +11,7 @@ draw_path = "/topic/openpose"
 scene = "openpose"
 
 x_offset = 3
-y_offset = 0 # 3
+y_offset = 0.1
 z_offset = -1.5
 
 last_ts_person = {}
@@ -64,7 +64,6 @@ def drawLine(person,bodypart,arr, color, action='create'):
     message['action'] = action
     message['type'] = 'object'
 
-    # TODO: Check if body part is 0 (should not draw that part)
     # If action is create or update generate data part of the message
     if ((action == 'create') or (action == 'update')):
         data_str = ""
@@ -83,9 +82,6 @@ def drawLine(person,bodypart,arr, color, action='create'):
         data['lineWidth'] = 11
         data['color'] = color # '#FF88EE'
         data['path'] =  data_str # '0 0 0, 1 0 0, 1 1 0, 1 1 1'
-
-        # data_cont = {}
-        # data_cont['meshline'] = data
 
         message['data'] = data
 
@@ -111,7 +107,6 @@ def refactorDraw(person,bodypart,arr, color, action='create'):
     message['action'] = action
     message['type'] = 'object'
 
-    # TODO: Check if body part is 0 (should not draw that part)
     # If action is create or update generate data part of the message
     if ((action == 'create') or (action == 'update')):
         data_str = ""
@@ -142,8 +137,49 @@ def refactorDraw(person,bodypart,arr, color, action='create'):
     new_draw_path = "realm/s/" + scene + "/"
     client.publish(new_draw_path + message['object_id'], json_data)
 
-    # debugging
-    # print(new_draw_path + message['object_id'], json_data)
+def drawCamera(cameraNum, coord, color, action = 'create'):
+
+    # Generate message
+    message = {}
+    message['object_id'] = 'cube' + str(cameraNum)
+    message['action'] = action
+    message['type'] = 'object'
+
+    # If action is create or update generate data part of the message
+    data = {}
+    data['object_type'] = 'cube'
+    data['color'] = color # '#FF88EE'
+
+    position = {}
+    position['x'] = coord[0]
+    position['y'] = coord[1]
+    position['z'] = coord[2]
+    data['position'] = position
+
+
+    rotation = {}
+    rotation['x'] = 0
+    rotation['y'] = 0
+    rotation['z'] = 0
+    rotation['w'] = 1
+    data['rotation'] = rotation
+
+    scale = {}
+    scale['x'] = 0.5
+    scale['y'] = 0.5
+    scale['z'] = 0.5
+    data['scale'] = scale
+
+
+    message['data'] = data
+
+    # Generate JSON
+    json_data = json.dumps(message)
+
+    # Publish message
+    new_draw_path = "realm/s/" + scene + "/"
+    client.publish(new_draw_path + message['object_id'], json_data)
+
 
 def drawPersonText(person,bodypart, arr, color, action='create'):
     # partID
@@ -192,8 +228,6 @@ def drawPersonText(person,bodypart, arr, color, action='create'):
     # Publish message
     new_draw_path = "realm/s/" + scene + "/"
     client.publish(new_draw_path + message['object_id'], json_data)
-
-    # print(json_data)
 
 
 def tryDraw(person,bodypart,arr, color):
@@ -253,20 +287,13 @@ def on_message(client, userdata, message):
             color = "#FF0000"
         elif (camera == 1):
             color = "#00FF00"
-        else:
+        elif (camera == 2):
             color = "#0000FF"
+        else:
+            color = "#FFFFFF"
 
-        # print(splits)
-        # cam_coord="thickline_"+","+FORMAT.format(float(splits[0]))
-        # person = "Person10"
-        # bodypart = str(int(message.topic[-1]))
-        # counter = 0
-        # partID = person+'_'+bodypart+'_'+str(counter)
-        # cam_coord = "thickline_"+partID+","+FORMAT.format(splits[0])+','+FORMAT.format(splits[1])+','+FORMAT.format(splits[2])+','+FORMAT.format(splits[0]+0.1)+','+FORMAT.format(splits[1]+0.1)+','+FORMAT.format(splits[2]+0.1)+",0,12,1,1,"+"#00FF00"+","+"on"
-        # print(cam_coord)
-        cam_coord = "cube_cam"+ str(camera) +","+FORMAT.format(x)+","+FORMAT.format(y)+","+FORMAT.format(z)+","+"0"+","+"0"+","+"0"+","+"0"+","+"0.2"+","+"0.2"+","+"0.2"+","+color+","+"on"
-        client.publish(draw_path+"/cube_cam" + str(camera),cam_coord)
-        # client.publish(draw_path+"/thickline_"+partID,cam_coord)
+        drawCamera(camera, [x, y, z], color)
+
     else:
         theMessage=str(message.payload.decode("utf-8"))
         splits=theMessage.split(',')
