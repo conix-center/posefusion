@@ -31,6 +31,9 @@ Must be run in the **openpose** folder.
 ./build/posefusion/posefusion-client <lambda_id>
 ```
 This runs the openpose program that gets body pose data from a single RGB camera. The pose then gets published to a MQTT broker. Each computer must be running the client in order for the PoseFusion server to run properly. <lambda_id> can be {1, 2, ...}
+You must also modify the file posefusion/posefusion-client.cpp at line 17 to put the proper CLIENT_ID. It must be unique for each MQTT client. For example for lambda 1 it should be "lambda-1", for lambda 2 "lambda-2" and so on.
+static std::string CLIENT_ID   = "lambda-"; // "lambda-3";
+After having modified this line, runs make in the build folder.
 
 **PoseFusion Server**
 ```
