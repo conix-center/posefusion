@@ -32,11 +32,11 @@ REF_CAM         = 0   # Stereo pair of referencce (0 is for camera0-camera1)
 CONF_SCORE      = 0.6 # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
 
 # Calibration
-RUN_CALIBRATION = True  # If set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used
-MIN_BODY_CALIB  = 500   # Number of skeletons to collect during autocalibration to obtain projection matrices
+RUN_CALIBRATION = False  # If set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used
+MIN_BODY_CALIB  = 1000   # Number of skeletons to collect during autocalibration to obtain projection matrices
 
 # Reconstruction
-ERR_THRESHOLD   = 5000
+ERR_THRESHOLD   = 2000
 FRAME_AVERAGING = 1     # Number of frames to average
 MIN_BODY_POINTS = 50    # Minimun number of body points that are non-zero to sent skeleton to ARENA
 
@@ -458,8 +458,8 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
                 # Compute difference of neck position and remove from second list if less than 3
                 diff = np.abs(np.sum(person_set1[1]-person_set2_transformed[1]))
                 print("diff: ", diff)
-                if (diff < 3):
-                    print("________________DIFF < 3: REMOVE BODY 2", diff)
+                if (diff < 10):
+                    print("________________DIFF < 10: REMOVE BODY 2", diff)
                     body_list_set2.remove(body_set2)
             # Send skeleon from set1
             saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1]
