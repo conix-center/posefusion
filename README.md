@@ -69,11 +69,21 @@ This scripts publishes the skeletons in the /topic/skeleton to the ARENA using t
 
 ## How does the system work?
 **Pose data collection**
+
 ![Pose data collection](/images/DataCollectDiagram.png)
 
 **Calibration procedure**
+
 ![Calibration procedure](/images/CalibrationDiagram.png)
 
+
+## TODO List
+- [ ] Use RANSAC to find R, t, scale, y_offset between different stereo cameras
+- [ ] Median filtering on 3D reconstructed bodies
+- [ ] Use reprojection error to find correct body if different number of bodies seen between two cameras in a stereo pair
+- [ ] Use fisheye cameras, first dewarp, then find instrinc matrix. The rest should be the same
+- [ ] Better tracker
+- [ ] Create configuration file for MQTT Server, Client IDs and topics
 
 ## Previous system
 **Camera Calibration:**
