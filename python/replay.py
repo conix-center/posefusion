@@ -19,6 +19,7 @@ TOPIC_POSE      = "/lambda/+/pose"
 TOPIC_POSE1      = "/lambda/1/pose"
 TOPIC_POSE2      = "/lambda/2/pose"
 TOPIC_POSE3      = "/lambda/3/pose"
+TOPIC_POSE4      = "/lambda/4/pose"
 
 
 
@@ -40,10 +41,13 @@ if __name__ == '__main__':
     lambda1 = open(path + file + "_l1", "r")
     lambda2 = open(path + file + "_l2", "r")
     lambda3 = open(path + file + "_l3", "r")
+    lambda4 = open(path + file + "_l4", "r")
+
 
     lines_l1 = lambda1.readlines()
     lines_l2 = lambda2.readlines()
     lines_l3 = lambda3.readlines()
+    lines_l4 = lambda4.readlines()
 
     # min_l = min(len(lines_l1), len(lines_l2))
 
@@ -76,15 +80,17 @@ if __name__ == '__main__':
     # ipdb.set_trace()
 
     total_l1 = 0
-    for i in range(min(len(lines_l1), len(lines_l2), len(lines_l3))):
+    for i in range(100, min(len(lines_l1), len(lines_l2), len(lines_l3), len(lines_l4))):
         data_string = []
-        # if (len(lines_l1[i].split(" ")) == 54) and (len(lines_l2[i].split(" ")) == 54):
         ts1 = int(lines_l1[i].split(" ")[0])
         ts2 = int(lines_l2[i].split(" ")[0])
         ts3 = int(lines_l3[i].split(" ")[0])
-        print(i, ts2-ts1)
-        # ipdb.set_trace()
+        ts4 = int(lines_l4[i].split(" ")[0])
+        print(i, ts1%10000, ts2%10000,ts3%10000,ts2-ts1, ts3-ts1)
+        # print("{} [1] {}, [2] {}, [3] {}".format(i, ts1, ts2, ts3))
+
         client.publish(TOPIC_POSE1, lines_l1[i][:-3] + ",") 
         client.publish(TOPIC_POSE2, lines_l2[i][:-3] + ",") 
         client.publish(TOPIC_POSE3, lines_l3[i][:-3] + ",")
+        client.publish(TOPIC_POSE4, lines_l4[i][:-3] + ",")
         sleep(0.03)
