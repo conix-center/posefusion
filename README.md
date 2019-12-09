@@ -67,6 +67,17 @@ python3 ./posefusion/python/skel.py
 ```
 This scripts publishes the skeletons in the /topic/skeleton to the ARENA using thickline objects.
 
+## How to save logs and replay them (Debugging)
+You can save the MQTT data for each lambda machine to be replayed later by running:
+```
+mosquitto_sub -h oz.andrew.cmu.edu -t /lambda/2/pose > log_612_l2 & mosquitto_sub -h oz.andrew.cmu.edu -t /lambda/1/pose > log_612_l1 & mosquitto_sub -h oz.andrew.cmu.edu -t /lambda/3/pose > log_612_l3 & mosquitto_sub -h oz.andrew.cmu.edu -t /lambda/4/pose > log_612_l4
+```
+It will save four files log_612_l1, log_612_l2, log_612_l3, log_612_l4. By placing those files in the same folder as replay.py you can replay the data by running:
+```
+python3 replay.py log_612
+```
+It will simulate sending data obtained from the OpenPose wrapper from each lambda every 30ms (30FPS).
+
 ## How does the system work?
 **Pose data collection**
 
