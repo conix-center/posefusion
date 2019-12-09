@@ -78,7 +78,8 @@ This scripts publishes the skeletons in the /topic/skeleton to the ARENA using t
 
 
 ## TODO List
-- [ ] Use RANSAC to find R, t, scale, y_offset between different stereo cameras
+- [ ] Obtain accurate intrinsic matrix for each camera
+- [ ] Force body to be orthogonal to the floor during calibration procedure (sometimes slanted at the moment)
 - [ ] Median filtering on 3D reconstructed bodies
 - [ ] Use reprojection error to find correct body if different number of bodies seen between two cameras in a stereo pair
 - [ ] Use fisheye cameras, first dewarp, then find instrinc matrix. The rest should be the same
