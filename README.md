@@ -49,15 +49,16 @@ Several parameters are available to configure the posefusion server:
  - NUM_CAMERAS: the number of cameras used (default: 3).
  - REF_CAM: the reference camera used for reconstrution (default: 2).
  - CONF_SCORE: the minimum confidence score sent by openpose to be considered a valid person (default: 0.7)
+ - USE_STEREO_3D: If set to true, 3D pts are obtained from stereo (math), otherwise uses projection matrices
 
 *Calibration*
- - LOAD_PROJS: if sets to true then the projections are loaded from PROJS_PATH otherwise the auto calibration algorithm will
-               be ran first (default: True).
+ - RUN_CALIBRATION: if set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used to load the projection matrices and affine matrix
  - MIN_BODY_CALIB: the minimum number of bodies that the program needs to collect before running the algorithm to find the
                    projection matrices (default: 500)
+ - MIN_BODY_AFFINE = 250: number of 3D skeletons collected to get affine transformation
 
 *Reconstruction*
- - ERR_THRESHOLD: the maximum reprojection error possible to consider the reconstructed 3D body valid (default: 10000).
+ - ERR_THRESHOLD: the maximum reprojection error possible to consider the reconstructed 3D body valid (default: 2000).
  - FRAME_AVERAGING: the number of frames to be averaged before reconstruction (default: 1)
  - MIN_BODY_POINTS: the minimum number of pody points (out of 25*parts * 3*values = 75) that pass the validity filter required before sending it to the ARENA (default: 50).
 
@@ -96,6 +97,7 @@ It will simulate sending data obtained from the OpenPose wrapper from each lambd
 - [ ] Use fisheye cameras, first dewarp, then find instrinc matrix. The rest should be the same
 - [ ] Better tracker
 - [ ] Create configuration file for MQTT Server, Client IDs and topics
+- [ ] Enable hands and faces
 
 ## Previous system
 **Camera Calibration:**
