@@ -46,15 +46,15 @@ Several parameters are available to configure the posefusion server:
 
 *General configuation*
  - MAX_NUM_PEOPLE: the maximum number of people supported (default: 20).
- - NUM_CAMERAS: the number of cameras used (default: 3).
- - REF_CAM: the reference camera used for reconstrution (default: 2).
- - CONF_SCORE: the minimum confidence score sent by openpose to be considered a valid person (default: 0.7)
+ - NUM_CAMERAS: the number of cameras used (default: 4).
+ - REF_CAM: the reference camera used for reconstrution (default: 0, first stereo pair).
+ - CONF_SCORE: the minimum confidence score sent by openpose to be considered a valid person (default: 0.6)
  - USE_STEREO_3D: If set to true, 3D pts are obtained from stereo (math), otherwise uses projection matrices
 
 *Calibration*
  - RUN_CALIBRATION: if set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used to load the projection matrices and affine matrix
  - MIN_BODY_CALIB: the minimum number of bodies that the program needs to collect before running the algorithm to find the
-                   projection matrices (default: 500)
+                   projection matrices (default: 1000)
  - MIN_BODY_AFFINE = 250: number of 3D skeletons collected to get affine transformation
 
 *Reconstruction*
