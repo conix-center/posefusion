@@ -26,10 +26,11 @@ INTRINSICS_PATH = "calib1.npz"
 
 # Global parameters
 # Configuation
-MAX_NUM_PEOPLE  = 20  # Maximum number of people supported
-NUM_CAMERAS     = 4   # (2 stereos = 2 * 2 cameras = 4)
-REF_CAM         = 0   # Stereo pair of referencce (0 is for camera0-camera1)
-CONF_SCORE      = 0.6 # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
+MAX_NUM_PEOPLE  = 20     # Maximum number of people supported
+NUM_CAMERAS     = 4      # (2 stereos = 2 * 2 cameras = 4)
+REF_CAM         = 0      # Stereo pair of referencce (0 is for camera0-camera1)
+CONF_SCORE      = 0.6    # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
+USE_STEREO_3D   = False  # If set to true, s3D pts are obtained from stereo (math), otherwise uses projection matrices
 
 # Calibration
 RUN_CALIBRATION = True  # If set to True the autocalibration will be ran, otherwise PROJS_PATH and AFFINE_PATH will be used
@@ -282,6 +283,29 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     error, error_mat = repro_error(pts4D, camera_1, camera_2, pt1, pt2)
     return error, error_mat, pts3D
 
+
+# https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md
+def triangulateStereo(body1, body2):
+    fx = 940         # lense focal length (need to check for logitech)
+    baseline = 1000  # distance in mm between two cameras (1m)
+    units = 2500     # scaling factor
+
+    # Store body coordinates in 3D
+    pts3D = np.zeros((25, 3))
+
+    # These two lines should be replaced to use the intrinsic matrix instead
+    pts3D[:,0] = body1[:,0] / 600
+    pts3D[:,1] = body1[:,1] / 700
+
+    # Get disparity from two images
+    disparity = (body2[:,0]-body1[:,0])
+
+    # Compute depth
+    depth = (fx * baseline) / (units * disparity)
+    pts3D[:, 2] = depth
+    return pts3D
+
+
 def get3DPointsStereo(camera1, camera2):
 
     global y_offset
@@ -312,7 +336,14 @@ def get3DPointsStereo(camera1, camera2):
     for body in range(num_bodies_cam1):
         first_points = dataPoints[camera1, :, :, body_cam1_dict[body][0]]
         second_points = dataPoints[camera2, :, :, body_cam2_dict[body][0]]
-        new_error, error_mat, pts3D = triangulateTwoBodies(projs[camera1], projs[camera2], first_points, second_points)
+
+        # Using stereo
+        if (USE_STEREO_3D == True):
+            pts3D = triangulateStereo(first_points, second_points)
+            new_error = 100
+        else:
+            new_error, error_mat, pts3D = triangulateTwoBodies(projs[camera1], projs[camera2], first_points, second_points)
+
         print("[{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
         if (new_error < ERR_THRESHOLD):
             # print("GOOD [{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
@@ -473,7 +504,7 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
         print("R", R)
         print("t", t)
         print("scale", scale)
-        print("y_offset", scale)
+        print("y_offset", y_offset)
 
         err = 0.25
 
