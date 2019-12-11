@@ -91,6 +91,7 @@ It will simulate sending data obtained from the OpenPose wrapper from each lambd
 
 ## TODO List
 - [ ] Obtain accurate intrinsic matrix for each camera
+- [ ] Fix/improve triangulateStereo function with correct elements from intrinsic matrix
 - [ ] Force body to be orthogonal to the floor during calibration procedure (sometimes slanted at the moment)
 - [ ] Median filtering on 3D reconstructed bodies
 - [ ] Use reprojection error to find correct body if different number of bodies seen between two cameras in a stereo pair
