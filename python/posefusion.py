@@ -324,6 +324,8 @@ def get3DPointsStereo(camera1, camera2):
     # Hold the 3D coordinates after triangulation
     saved3DCoordinates = np.zeros((25, 3, num_bodies_cam1))
 
+    #TODO - GRG : Limitation - Currently, we need the stereo pair to detect the same number of persons, 
+    # which may not always be the case since field of view is slightly different
     if (num_bodies_cam1 != num_bodies_cam2) or (num_bodies_cam1 == 0):
         return saved3DCoordinates, 0
 
@@ -636,7 +638,7 @@ def convertTo3DPoints(ref_cam, number_cameras):
     not_equal = False
 
     if (bodies_id_cam[0] != bodies_id_cam[1]):
-            not_equal = True
+        not_equal = True
     
     # Go through each body in camera 0
     for body_num_cam_ref in bodies_id_cam[ref_cam]:
