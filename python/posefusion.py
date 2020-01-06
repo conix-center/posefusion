@@ -55,6 +55,7 @@ dataPoints = np.empty((NUM_CAMERAS, 25, 2, MAX_NUM_PEOPLE))
 pts_affine = np.zeros((2, MIN_BODY_AFFINE, 25, 3))
 
 # Flags
+#TODO - GRG : Need to ensure that the running variable is thread safe i.e. same value across multiple threads
 running = False                          # Flag to indicate that triangulation algorithm is running
 calib_done = False                       # Flag to indicate that the calibration procedure is done
 transform_computed = False               # Flag to indicate that the transformation (R, t) was computed
@@ -248,7 +249,7 @@ def filter_body(body):
 triangulateTwoBodies: obtain 3D reconstruction of body given body coordinates from two different 
                       cameras.
     Input:  camera_1, projection matrix of first camera
-            camera_1, projection matrix of second camera
+            camera_2, projection matrix of second camera
             pt1, 2D coordinates of body of first camera
             pt2, 2D coordinates of body of second camera
     Output: error, overall reprojection error (scalar)
@@ -260,6 +261,12 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     pt1 = np.vstack((pt1[:,0], pt1[:,1]))
     pt2 = np.vstack((pt2[:,0], pt2[:,1]))
 
+    #Note - on cv2.triangulatePoints function, the 3D point is found from the equation that 
+    # x = CX where x is 2D image point, X is the 3D world point, C is camera projection matrix (3D to 2D conversion matrix)
+    # and the fact that x cross-profuct with PX must be zero, so can write the equations from these into a linear form as AX = 0,
+    # and each camera in the stereo pair gives 2 equations thus A is 4x4 
+    # Sub-note - all points are in homogenious coordinate in the above equations
+    
     # For each
     pts4D = cv2.triangulatePoints(camera_1, camera_2, pt1, pt2).T
 
@@ -325,7 +332,7 @@ def get3DPointsStereo(camera1, camera2):
     body_cam1_dict = {}
     for body in range(num_bodies_cam1):
         body_cam1_dict[body] = dataPoints[camera1, :, :, body][1, 0]
-    body_cam1_dict = sorted(body_cam1_dict.items(), key=lambda x: x[1])
+    body_cam1_dict = sorted(body_cam1_dict.items(), key=lambda x: x[1]) #TODO - GRG : Need to make sure that the sorting doesn't mess up the data
     # Camera2
     body_cam2_dict = {}
     for body in range(num_bodies_cam2):
@@ -355,13 +362,18 @@ def get3DPointsStereo(camera1, camera2):
 
     return saved3DCoordinates, num_bodies
 
+
+'''
+This calculates the Transformation matrix R & T from dataset A to dataset B.
+
+Ref-links :
 # http://nghiaho.com/?page_id=671
 # https://github.com/nghiaho12/rigid_transform_3D/blob/master/rigid_transform_3D.py
 # Input: expects 3xN matrix of points
 # Returns R,t
 # R = 3x3 rotation matrix
 # t = 3x1 column vector
-
+'''
 def rigid_transform_3D(A, B):
     assert len(A) == len(B)
 
@@ -387,18 +399,21 @@ def rigid_transform_3D(A, B):
 
     # find rotation
     U, S, Vt = np.linalg.svd(H)
-    R = Vt.T @ U.T
+    R = Vt.T @ U.T #TODO - GRG : This calculates a transform from A to B, but don't we need transform from B to A?
 
     # special reflection case
     if np.linalg.det(R) < 0:
         print("det(R) < R, reflection detected!, correcting for it ...\n");
-        Vt[2,:] *= -1
+        Vt[2,:] *= -1 #TODO - GRG : In the referenced articale the V & U are recalculated using the R. Need to check this.
         R = Vt.T @ U.T
 
     t = -R@centroid_A + centroid_B
 
     return R, t
 
+''' 
+Performs scaling followed by rotation and then translation
+'''
 def transformBody(body, R, t, scale = 1):
     body = body.T
     body = body * scale
@@ -406,10 +421,17 @@ def transformBody(body, R, t, scale = 1):
     return transformed_body.T
 
 
+'''
+Used to find the best transformation matrix R & T between the 2 stereo sets. 
+For each body correspondace transformation matrix is calculated and RANSAC algorithm is 
+used to calculate the no of inliers (i.e. Body pairs/correspondences that agree with the transformation matrix).
+The transformation matrix having the highest no of inliers is chosen
+'''
 def ransacH(pts_affine, num_iter=5000, tol=0.25):
     max_inliers = 0
     pts1_affine = pts_affine[0]
     pts2_affine = pts_affine[1]
+    #TODO - GRG Ciritcal: How are we assuring the one-to-one body correspondance between the 2 stereo sets? It may so happen that body-1 in stereo set-1 may be actually body-2 in stereo set-2 and not body-1
 
     bestR = 0
     bestt = 0
@@ -439,7 +461,7 @@ def ransacH(pts_affine, num_iter=5000, tol=0.25):
         scale = neck_hip_1 / neck_hip_2
 
         if (np.isnan(scale).any()):
-            scale = 1
+            scale = 1   #TODO - GRG : Ensure this only sets scale = 1 for bodies/skel which have Nan entries 
 
         # Scale second skeleton to size of first before finding the transformation
         skel_2 = scale * skel_2
@@ -451,8 +473,8 @@ def ransacH(pts_affine, num_iter=5000, tol=0.25):
         for j in range(pts1_affine.shape[0]):
             # Verify error for each 3D body pairs
             skel_1_est = transformBody(pts2_affine[j], R, t, scale)
-            err = np.sqrt(np.sum((skel_1_est - pts1_affine[j]) **2)) / 25
-            if (err < 0.25):
+            err = np.sqrt(np.sum((skel_1_est - pts1_affine[j]) **2)) / 25 #TODO - GRG : Why divide by 25? because of 25 pose points?
+            if (err < 0.25): #TODO - GRG : How is the error threshold determined as 0.25?
                 num_inliers += 1
 
         print("[{}] inliers: {}/{} ({})".format(i, num_inliers, max_inliers, pts1_affine.shape[0]))
@@ -463,6 +485,10 @@ def ransacH(pts_affine, num_iter=5000, tol=0.25):
             bestt = t
             besty_offset = y_offset
             bestscale = scale
+
+    print(f'Max inliers found is {max_inliers}')
+
+    #TODO - GRG : Technically RANSAC algorithm recalculates the parameters again using all the inliers 
 
     return bestR, bestt, besty_offset, bestscale
 
@@ -492,7 +518,7 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
     body_valid = 0
 
     if (transform_computed == False) and (num_body_set1 == 1) and (num_body_set2 == 1):
-        pts_affine[0][num_skels_before_transform] = set1_3DCoordinates[:, :, 0]
+        pts_affine[0][num_skels_before_transform] = set1_3DCoordinates[:, :, 0] 
         pts_affine[1][num_skels_before_transform] = set2_3DCoordinates[:, :, 0]
         num_skels_before_transform += 1
         print("{} 3D skels collected for affine RANSAC".format(num_skels_before_transform))
@@ -506,6 +532,7 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
         print("scale", scale)
         print("y_offset", y_offset)
 
+        #TODO - GRG : How is this error value calculated?
         err = 0.25
 
         # Save it for later
@@ -514,38 +541,42 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
         # Set transform_computed flag to True
         transform_computed = True
 
+    #TODO - GRG : Fusion needs to be performed once the transform is computed 
+    #TODO - GRG : but it is skipped for the transform computation step which needs to be taken care of
+    
     # Perform fusion of skeletons from different stereos
     elif (transform_computed == True):
         # Send any skeletons from the first camera pair
         for body_set1 in body_list_set1:
+            # Select person from first stereo
+            person_set1 = set1_3DCoordinates[:, :, body_set1]
+
+            #TODO - GRG : Optimization - Can avoid this for loop entirely using matrix operation instead 
             # If body_set1 and body_set2 similar, draw best one and remove from list
             for body_set2 in body_list_set2:
-                # Select person from first stereo
-                person_set1 = set1_3DCoordinates[:, :, body_set1]
-
                 # Transform person from second stereo to match first stereo coordinates
-                A = set2_3DCoordinates[:, :, body_set2]
-                person_set2_transformed = transformBody(A, R, t, scale)
+                person_set2 = set2_3DCoordinates[:, :, body_set2]
+                person_set2_transformed = transformBody(person_set2, R, t, scale)
 
                 # Compute difference of neck position and remove from second list if less than 3
                 diff = np.abs(np.sum(person_set1[1]-person_set2_transformed[1]))
                 print("diff: ", diff)
-                if (diff < 1):
+                if (diff < 1): #TODO - GRG : How is this value determined?
                     print("________________DIFF < 1: REMOVE BODY 2", diff)
-                    body_list_set2.remove(body_set2)
+                    body_list_set2.remove(body_set2) #TODO - GRG : Why are we preferring stereo set-1 over set-2?
             # Send skeleon from set1
             # print("[1] Send body{}".format(body_set1))
-            saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1]
+            saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1] #TODO - GRG : Why are we considering/sending all of the body corresponding to set-1?
             body_valid += 1
 
         # Any remaining skeleton from second camera pair
         for body_set2 in body_list_set2:
             # print("[2] Send body{}".format(body_set2))
             # Select body
-            A = set2_3DCoordinates[:, :, body_set2]
+            person_set2 = set2_3DCoordinates[:, :, body_set2]
 
             # Transform body
-            person_set2_transformed = transformBody(A, R, t, scale)
+            person_set2_transformed = transformBody(person_set2, R, t, scale)
 
             # Send it
             saved3DCoordinates[:,:,body_valid] = person_set2_transformed
@@ -554,10 +585,11 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
             # body_valid += 1
 
     # Fill data Points with 0
-    dataPoints.fill(0)
+    dataPoints.fill(0) #Note - GRG : Global varible holding the deteched data points which needs to be cleared once processed
 
     # In case the number of people is greater than MAX_NUM_PEOPLE supported (wrong fusion), don't send anything
     if (body_valid >= MAX_NUM_PEOPLE):
+        print(f'Error!!! Wrong fusion occurred as {body_valid} detected bodies found which is greater than {MAX_NUM_PEOPLE} Max No of detection allowed...')
         body_valid = 0
 
     # print("Number of bodies to be sent:", body_valid)
@@ -661,7 +693,7 @@ get_num_body_camera: helper function to find number of bodies detected by a came
 def get_num_body_camera(camera_num):
     body_count = 0
     for i in range(dataPoints.shape[3]):
-        if (np.any(dataPoints[camera_num,:,:,i]) == True):
+        if (np.any(dataPoints[camera_num,:,:,i]) == True): #Note - GRG : Any non-zero value or non-false value will satisfy the if condition
             body_count = body_count + 1
     return body_count
 
@@ -912,6 +944,7 @@ if __name__ == '__main__':
                     # prev3DPoints[:,:,person] = fusion_body(prev3DPoints[:,:,person], points3D[:,:,person])
                     # prev3DPoints[:,:,person] = points3D[:,:,person]
 
+                    #TODO - GRG : May need to place this if-condition before the for-loop to optimize performance
                     # Done averaging, publish it
                     if (frame == FRAME_AVERAGING):
                         # Filter body (after fusion?)
@@ -932,9 +965,9 @@ if __name__ == '__main__':
                     frame +=1
 
                 # Replace previous points with new points and 0 for the rest
-                for person in range(numBodies):
+                for person in range(numBodies): #Update pose points for detected people
                     prev3DPoints[:,:,person] = points3D[:,:,person]
-                for person in range(numBodies, MAX_NUM_PEOPLE):
+                for person in range(numBodies, MAX_NUM_PEOPLE): #For people who haven't been detected now clear them out be filling 0
                     prev3DPoints[:,:,person].fill(0)
 
                 # Done with this funtion
@@ -942,4 +975,4 @@ if __name__ == '__main__':
         # End received frames from lambdas
 
         # Get new messages
-        client.loop(0.01)
+        client.loop(0.01) #TODO - GRG Note : Max Frame rate at which posefusion is running i.e. 10ms or 100FPS

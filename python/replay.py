@@ -93,4 +93,4 @@ if __name__ == '__main__':
         client.publish(TOPIC_POSE2, lines_l2[i][:-3] + ",") 
         client.publish(TOPIC_POSE3, lines_l3[i][:-3] + ",")
         client.publish(TOPIC_POSE4, lines_l4[i][:-3] + ",")
-        sleep(0.03)
+        sleep(0.03) #Simulate sending data obtained from the OpenPose wrapper from each lambda every 30ms (30FPS)

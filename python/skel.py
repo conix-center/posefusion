@@ -15,9 +15,10 @@ y_offset = 0.1
 z_offset = -1.5
 
 last_ts_person = {}
-for i in range(5):
+for i in range(5): #Note : Initializing for 5 people 
     last_ts_person["Person" +str(i)] = 0
 
+#TODO - GRG : last_ts_check var is not updated at all
 last_ts_check  = 0
 
 FORMAT="{0:0.3f}"
@@ -93,8 +94,8 @@ def drawLine(person,bodypart,arr, color, action='create'):
     new_draw_path = "realm/s/" + scene + "/"
     client.publish(new_draw_path + message['object_id'], json_data)
 
-
-def refactorDraw(person,bodypart,arr, color, action='create'):
+#TODO - GRG : Where is the message structure defined/documentation?
+def refactorDraw(person, bodypart, arr, color, action='create'):
     # partID
     partID = person+'_'+bodypart
 
@@ -229,8 +230,8 @@ def drawPersonText(person,bodypart, arr, color, action='create'):
     new_draw_path = "realm/s/" + scene + "/"
     client.publish(new_draw_path + message['object_id'], json_data)
 
-
-def tryDraw(person,bodypart,arr, color):
+#TODO - GRG : tryDraw fun not used?
+def tryDraw(person, bodypart, arr, color):
     counter = 0
     onoff = "on"
 
@@ -275,6 +276,7 @@ def on_connect(client, userdata, flags, rc):
 # send out draw commands on draw_path that match their coordinates
 def on_message(client, userdata, message):
 
+    #TODO - GRG : When is the camera drawn and for what?
     if (message.topic[:-1] == TOPIC_CAMERA[:-1]):
         theMessage=str(message.payload.decode("utf-8"))
         splits=theMessage.split(',')
@@ -351,6 +353,7 @@ def on_message(client, userdata, message):
         drawPersonText(Person, "name", LEar, "red")
         last_ts_person[Person] = time.time()
 
+        #TODO - GRG : What are these reference lines for?
         drawLine("Ref_line","line1",[[0, 0, 0], [0, 2, 0]], "#000000", action='create')
         drawLine("Ref_line","line2",[[1, 0, 0], [1, 2, 0]], "#000000", action='create')
         drawLine("Ref_line","line3",[[0, 0, 1], [0, 2, 1]], "#000000", action='create')
@@ -359,20 +362,23 @@ def on_message(client, userdata, message):
 
 
 
-################## MQTT Init ##################
-client = paho.Client()
-client.on_connect=on_connect
-client.on_message=on_message
+if __name__ == '__main__':
+        
+    ################## MQTT Init ##################
+    client = paho.Client()
+    client.on_connect=on_connect
+    client.on_message=on_message
 
-################## MQTT Connect ##################
-print("Connecting to broker: ", SERVER_ADDR)
-client.connect(SERVER_ADDR)
-client.loop_start() # start loop to process received messages
+    ################## MQTT Connect ##################
+    print("Connecting to broker: ", SERVER_ADDR)
+    client.connect(SERVER_ADDR)
+    client.loop_start() # start loop to process received messages
 
-while True:
-    if ((time.time() - last_ts_check) > 1):
-        refreshArena()
-    time.sleep(0.1)
+    while True:
+        if ((time.time() - last_ts_check) > 1):
+            refreshArena()
+            last_ts_check = time.time() #TODO - GRG : Added by me
+        time.sleep(0.1)
 
-client.disconnect() #disconnect
-client.loop_stop() #stop loop
+    client.disconnect() #disconnect
+    client.loop_stop() #stop loop
