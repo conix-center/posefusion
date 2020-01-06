@@ -27,7 +27,7 @@ INTRINSICS_PATH = "calib1.npz"
 # Global parameters
 # Configuation
 MAX_NUM_PEOPLE  = 20     # Maximum number of people supported
-NUM_CAMERAS     = 4      # (2 stereos = 2 * 2 cameras = 4)
+NUM_CAMERAS     = 2      # (2 stereos = 2 * 2 cameras = 4)
 REF_CAM         = 0      # Stereo pair of referencce (0 is for camera0-camera1)
 CONF_SCORE      = 0.6    # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
 USE_STEREO_3D   = False  # If set to true, s3D pts are obtained from stereo (math), otherwise uses projection matrices
@@ -377,12 +377,12 @@ Ref-links :
 def rigid_transform_3D(A, B):
     assert len(A) == len(B)
 
-    num_rows, num_cols = A.shape;
+    num_rows, num_cols = A.shape
 
     if num_rows != 3:
         raise Exception("matrix A is not 3xN, it is {}x{}".format(num_rows, num_cols))
 
-    [num_rows, num_cols] = B.shape;
+    [num_rows, num_cols] = B.shape
     if num_rows != 3:
         raise Exception("matrix B is not 3xN, it is {}x{}".format(num_rows, num_cols))
 
@@ -506,83 +506,84 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
     set1_3DCoordinates, num_body_set1 = get3DPointsStereo(0, 1)
     body_list_set1 = list(range(num_body_set1))
 
-    # Obtain 3D skeletons from second stereo (cam2-cam3)
-    set2_3DCoordinates, num_body_set2 = get3DPointsStereo(2, 3)
-    body_list_set2 = list(range(num_body_set2))
+    # # Obtain 3D skeletons from second stereo (cam2-cam3)
+    # set2_3DCoordinates, num_body_set2 = get3DPointsStereo(2, 3)
+    # body_list_set2 = list(range(num_body_set2))
 
     # Total number of 3D skeleton across both cameras
-    total_skels = num_body_set1 + num_body_set2
+    # total_skels = num_body_set1 + num_body_set2
+    total_skels = num_body_set1
 
     # Will store 3D skeletons after fusion between the two stereo pairs
     saved3DCoordinates = np.empty((25, 3, total_skels*2))
     body_valid = 0
 
-    if (transform_computed == False) and (num_body_set1 == 1) and (num_body_set2 == 1):
-        pts_affine[0][num_skels_before_transform] = set1_3DCoordinates[:, :, 0] 
-        pts_affine[1][num_skels_before_transform] = set2_3DCoordinates[:, :, 0]
-        num_skels_before_transform += 1
-        print("{} 3D skels collected for affine RANSAC".format(num_skels_before_transform))
+    # if (transform_computed == False) and (num_body_set1 == 1) and (num_body_set2 == 1):
+    #     pts_affine[0][num_skels_before_transform] = set1_3DCoordinates[:, :, 0] 
+    #     pts_affine[1][num_skels_before_transform] = set2_3DCoordinates[:, :, 0]
+    #     num_skels_before_transform += 1
+    #     print("{} 3D skels collected for affine RANSAC".format(num_skels_before_transform))
 
-    # If R, t have not be found, compute them
-    if (transform_computed == False) and (num_skels_before_transform == MIN_BODY_AFFINE):
-        # Obtain R, t, y_offset and scale using RANSAC
-        R, t, y_offset, scale = ransacH(pts_affine)
-        print("R", R)
-        print("t", t)
-        print("scale", scale)
-        print("y_offset", y_offset)
+    # # If R, t have not be found, compute them
+    # if (transform_computed == False) and (num_skels_before_transform == MIN_BODY_AFFINE):
+    #     # Obtain R, t, y_offset and scale using RANSAC
+    #     R, t, y_offset, scale = ransacH(pts_affine)
+    #     print("R", R)
+    #     print("t", t)
+    #     print("scale", scale)
+    #     print("y_offset", y_offset)
 
-        #TODO - GRG : How is this error value calculated?
-        err = 0.25
+    #     #TODO - GRG : How is this error value calculated?
+    #     err = 0.25
 
-        # Save it for later
-        np.savez(AFFINE_PATH, R = R, t=t, scale = scale, y_offset = y_offset, err=err, date=int(time.time()))
+    #     # Save it for later
+    #     np.savez(AFFINE_PATH, R = R, t=t, scale = scale, y_offset = y_offset, err=err, date=int(time.time()))
 
-        # Set transform_computed flag to True
-        transform_computed = True
+    #     # Set transform_computed flag to True
+    #     transform_computed = True
 
-    #TODO - GRG : Fusion needs to be performed once the transform is computed 
-    #TODO - GRG : but it is skipped for the transform computation step which needs to be taken care of
+    # #TODO - GRG : Fusion needs to be performed once the transform is computed 
+    # #TODO - GRG : but it is skipped for the transform computation step which needs to be taken care of
     
-    # Perform fusion of skeletons from different stereos
-    elif (transform_computed == True):
-        # Send any skeletons from the first camera pair
-        for body_set1 in body_list_set1:
-            # Select person from first stereo
-            person_set1 = set1_3DCoordinates[:, :, body_set1]
+    # # Perform fusion of skeletons from different stereos
+    # elif (transform_computed == True):
+    #     # Send any skeletons from the first camera pair
+    for body_set1 in body_list_set1:
+        # Select person from first stereo
+        person_set1 = set1_3DCoordinates[:, :, body_set1]
 
-            #TODO - GRG : Optimization - Can avoid this for loop entirely using matrix operation instead 
-            # If body_set1 and body_set2 similar, draw best one and remove from list
-            for body_set2 in body_list_set2:
-                # Transform person from second stereo to match first stereo coordinates
-                person_set2 = set2_3DCoordinates[:, :, body_set2]
-                person_set2_transformed = transformBody(person_set2, R, t, scale)
+        # #TODO - GRG : Optimization - Can avoid this for loop entirely using matrix operation instead 
+        # # If body_set1 and body_set2 similar, draw best one and remove from list
+        # for body_set2 in body_list_set2:
+        #     # Transform person from second stereo to match first stereo coordinates
+        #     person_set2 = set2_3DCoordinates[:, :, body_set2]
+        #     person_set2_transformed = transformBody(person_set2, R, t, scale)
 
-                # Compute difference of neck position and remove from second list if less than 3
-                diff = np.abs(np.sum(person_set1[1]-person_set2_transformed[1]))
-                print("diff: ", diff)
-                if (diff < 1): #TODO - GRG : How is this value determined?
-                    print("________________DIFF < 1: REMOVE BODY 2", diff)
-                    body_list_set2.remove(body_set2) #TODO - GRG : Why are we preferring stereo set-1 over set-2?
-            # Send skeleon from set1
-            # print("[1] Send body{}".format(body_set1))
-            saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1] #TODO - GRG : Why are we considering/sending all of the body corresponding to set-1?
-            body_valid += 1
+        #     # Compute difference of neck position and remove from second list if less than 3
+        #     diff = np.abs(np.sum(person_set1[1]-person_set2_transformed[1]))
+        #     print("diff: ", diff)
+        #     if (diff < 1): #TODO - GRG : How is this value determined?
+        #         print("________________DIFF < 1: REMOVE BODY 2", diff)
+        #         body_list_set2.remove(body_set2) #TODO - GRG : Why are we preferring stereo set-1 over set-2?
+        # Send skeleon from set1
+        # print("[1] Send body{}".format(body_set1))
+        saved3DCoordinates[:,:,body_valid] = set1_3DCoordinates[:, :, body_set1] #TODO - GRG : Why are we considering/sending all of the body corresponding to set-1?
+        body_valid += 1
 
-        # Any remaining skeleton from second camera pair
-        for body_set2 in body_list_set2:
-            # print("[2] Send body{}".format(body_set2))
-            # Select body
-            person_set2 = set2_3DCoordinates[:, :, body_set2]
+        # # Any remaining skeleton from second camera pair
+        # for body_set2 in body_list_set2:
+        #     # print("[2] Send body{}".format(body_set2))
+        #     # Select body
+        #     person_set2 = set2_3DCoordinates[:, :, body_set2]
 
-            # Transform body
-            person_set2_transformed = transformBody(person_set2, R, t, scale)
+        #     # Transform body
+        #     person_set2_transformed = transformBody(person_set2, R, t, scale)
 
-            # Send it
-            saved3DCoordinates[:,:,body_valid] = person_set2_transformed
-            body_valid += 1
-            # saved3DCoordinates[:,:,body_valid] = A
-            # body_valid += 1
+        #     # Send it
+        #     saved3DCoordinates[:,:,body_valid] = person_set2_transformed
+        #     body_valid += 1
+        #     # saved3DCoordinates[:,:,body_valid] = A
+        #     # body_valid += 1
 
     # Fill data Points with 0
     dataPoints.fill(0) #Note - GRG : Global varible holding the deteched data points which needs to be cleared once processed
