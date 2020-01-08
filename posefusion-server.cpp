@@ -7,6 +7,7 @@
 #include <openpose/headers.hpp>
 #include <unistd.h>
 #include <chrono>
+#include <opencv/cv.h>
 
 using namespace std;
 using namespace cv;
