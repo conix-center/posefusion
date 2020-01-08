@@ -7,11 +7,18 @@ target_link_libraries(posefusion-client
 	openpose
 	${examples_3rdparty_libraries}
 	paho-mqtt3cs
+	paho-mqtt3as
+        paho-mqttpp3
+
 )
 
 target_link_libraries(posefusion-server
+        paho-mqtt3cs
+        paho-mqtt3a
+	paho-mqtt3as
+	paho-mqttpp3
+	openpose
 	${examples_3rdparty_libraries}
-	paho-mqtt3cs
 )
 
 target_link_libraries(camera-calibration 
