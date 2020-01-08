@@ -1,4 +1,5 @@
 #include <openpose/headers.hpp>
+#include <opencv/cv.h>
 
 using namespace cv;
 using namespace std;
