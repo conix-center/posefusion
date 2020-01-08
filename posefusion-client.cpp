@@ -148,23 +148,23 @@ void configureWrapper(op::Wrapper& opWrapper)
         // Applying user defined configuration - GFlags to program variables
         // producerType
         op::ProducerType producerType;
-        std::string producerString;
+        op::String producerString;
         std::tie(producerType, producerString) = op::flagsToProducer(
             FLAGS_image_dir, FLAGS_video, FLAGS_ip_camera, FLAGS_camera, FLAGS_flir_camera, FLAGS_flir_camera_index);
         // cameraSize
-        const auto cameraSize = op::flagsToPoint(FLAGS_camera_resolution, "-1x-1");
+        const auto cameraSize = op::flagsToPoint(op::String(FLAGS_camera_resolution), "-1x-1");
         // outputSize
-        const auto outputSize = op::flagsToPoint(FLAGS_output_resolution, "-1x-1");
+        const auto outputSize = op::flagsToPoint(op::String(FLAGS_output_resolution), "-1x-1");
         // netInputSize
-        const auto netInputSize = op::flagsToPoint(FLAGS_net_resolution, "-1x368");
+        const auto netInputSize = op::flagsToPoint(op::String(FLAGS_net_resolution), "-1x368");
         // faceNetInputSize
-        const auto faceNetInputSize = op::flagsToPoint(FLAGS_face_net_resolution, "368x368 (multiples of 16)");
+        const auto faceNetInputSize = op::flagsToPoint(op::String(FLAGS_face_net_resolution), "368x368 (multiples of 16)");
         // handNetInputSize
-        const auto handNetInputSize = op::flagsToPoint(FLAGS_hand_net_resolution, "368x368 (multiples of 16)");
+        const auto handNetInputSize = op::flagsToPoint(op::String(FLAGS_hand_net_resolution), "368x368 (multiples of 16)");
         // poseMode
         const auto poseMode = op::flagsToPoseMode(FLAGS_body);
         // poseModel
-        const auto poseModel = op::flagsToPoseModel(FLAGS_model_pose);
+        const auto poseModel = op::flagsToPoseModel(op::String(FLAGS_model_pose));
         // JSON saving
         if (!FLAGS_write_keypoint.empty())
             op::opLog("Flag `write_keypoint` is deprecated and will eventually be removed."
