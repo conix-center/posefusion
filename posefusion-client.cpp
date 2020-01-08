@@ -14,7 +14,7 @@ const std::string SERVER_ADDR = "oz.andrew.cmu.edu";
 const float MIN_CONF_SCORE    = 0.4;
 const float MAX_TIME_FRAME_MS = 40;
 
-static std::string CLIENT_ID   = "lambda-"; // "lambda-3";
+static std::string CLIENT_ID   = "lambda-3"; // "lambda-3";
 static std::string TOPIC       = "/lambda/"; // "/lambda/3/pose";
 
 const int QOS = 0;

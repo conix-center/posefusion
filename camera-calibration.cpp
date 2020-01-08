@@ -1,5 +1,7 @@
 #include <openpose/headers.hpp>
 #include <unistd.h>
+#include <opencv/cv.h>
+#include <iostream>
 
 using namespace std;
 using namespace cv;
