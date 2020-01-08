@@ -6,12 +6,12 @@ add_executable(image-grab 			image-grab.cpp)
 target_link_libraries(posefusion-client 
 	openpose
 	${examples_3rdparty_libraries}
-	paho-mqttpp3
+	paho-mqtt3cs
 )
 
 target_link_libraries(posefusion-server
 	${examples_3rdparty_libraries}
-	paho-mqttpp3
+	paho-mqtt3cs
 )
 
 target_link_libraries(camera-calibration 

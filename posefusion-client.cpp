@@ -6,6 +6,7 @@
 #include <openpose/headers.hpp>
 #include "mqtt/client.h"
 #include <sys/time.h>
+#include <opencv2/opencv.hpp>
 
 // Custom OpenPose flags
 DEFINE_bool(no_display, false, "Disable the visual display.");
@@ -94,11 +95,11 @@ public:
 
                 // We assume that we are running OpenPose WITHOUT face and hand detection
                 if (FLAGS_face) {
-                    op::log("Face keypoints: " + datumsPtr->at(0)->faceKeypoints.toString());
+                    op::opLog("Face keypoints: " + datumsPtr->at(0)->faceKeypoints.toString());
                 }
                 if (FLAGS_hand){
-                    op::log("Left hand keypoints: " + datumsPtr->at(0)->handKeypoints[0].toString());
-                    op::log("Right hand keypoints: " + datumsPtr->at(0)->handKeypoints[1].toString());
+                    op::opLog("Left hand keypoints: " + datumsPtr->at(0)->handKeypoints[0].toString());
+                    op::opLog("Right hand keypoints: " + datumsPtr->at(0)->handKeypoints[1].toString());
                 }
 
                 // End program if ESC key is pressed
@@ -166,7 +167,7 @@ void configureWrapper(op::Wrapper& opWrapper)
         const auto poseModel = op::flagsToPoseModel(FLAGS_model_pose);
         // JSON saving
         if (!FLAGS_write_keypoint.empty())
-            op::log("Flag `write_keypoint` is deprecated and will eventually be removed."
+            op::opLog("Flag `write_keypoint` is deprecated and will eventually be removed."
                     " Please, use `write_json` instead.", op::Priority::Max);
         // keypointScaleMode
         const auto keypointScaleMode = op::flagsToScaleMode(FLAGS_keypoint_scale);
@@ -247,16 +248,16 @@ int poseFusion()
 {
     try
     {
-        op::log("Starting PoseFusion...", op::Priority::High);
+        op::opLog("Starting PoseFusion...", op::Priority::High);
         const auto opTimer = op::getTimerInit();
 
         // OpenPose wrapper
-        op::log("Configuring OpenPose...", op::Priority::High);
+        op::opLog("Configuring OpenPose...", op::Priority::High);
         op::Wrapper opWrapper;
         configureWrapper(opWrapper);
 
         // Start, run, and stop processing - exec() blocks this thread until OpenPose wrapper has finished
-        op::log("Starting thread(s)...", op::Priority::High);
+        op::opLog("Starting thread(s)...", op::Priority::High);
         opWrapper.exec();
 
         // Measuring total time
