@@ -38,37 +38,45 @@ echo "Started installing CUDA"
 sudo apt-get update && sudo apt-get install -y lambda-stack-cuda
 echo "Cuda installation finished"
 
-echo "Started installing openCV"
-mkdir openCV
-cd openCV
-sudo apt-get install build-essential
-sudo apt-get install libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
-git clone https://github.com/opencv/opencv.git
-cd opencv
-git checkout 3.4
-cd ..
+#echo "Started installing openCV"
+#mkdir openCV
+#cd openCV
 
-git clone https://github.com/opencv/opencv_contrib.git
-cd opencv_contrib
-git checkout 3.4
-cd ..
+#sudo apt-get install build-essential
+#sudo apt-get install libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
 
-echo "Complete Configuration and Generation on CMake and press any key to continue installation"
-echo "Note : Set OPENCV_EXTRA_MODULES_PATH: to the PoseFusion/openCV/opencv_contrib/modules"
-echo "Note : Due to a current bug in CUDA disable cudacodec option. For more info see OpenCV_contrib issue 1786"
-sudo cmake-gui
+#git clone https://github.com/opencv/opencv.git
+#cd opencv
+#git checkout 3.4
+#cd ..
+
+#wget https://github.com/opencv/opencv/archive/3.2.0.tar.gz
+#mkdir opencv && tar -zxvf 3.2.0.tar.gz -C opencv --strip-components 1
+
+#wget https://github.com/opencv/opencv_contrib/archive/3.2.0.tar.gz
+#mkdir opencv_contrib && tar -zxvf 3.2.0.tar.gz -C opencv_contrib --strip-components 1
+
+#git clone https://github.com/opencv/opencv_contrib.git
+#cd opencv_contrib
+#git checkout 3.4
+#cd ..
+
+#echo "Complete Configuration and Generation on CMake and press any key to continue installation"
+#echo "Note : Set OPENCV_EXTRA_MODULES_PATH: to the PoseFusion/openCV/opencv_contrib/modules"
+#echo "Note : Due to a current bug in CUDA disable cudacodec option. For more info see OpenCV_contrib issue 1786"
+#sudo cmake-gui
 
 #Wait till user presses any key
-read  -n 1 -p "Continue:" keypress
+#read  -n 1 -p "Continue:" keypress
 
-cd opencv/build/
-sudo make -j`nproc`
+#cd opencv/build/
+#sudo make -j`nproc`
 
 #Required to include openpose cpp as library in global enviornment file
-sudo make install
+#sudo make install
 
-cd ../..
-echo "openCV Installation finished"
+#cd ../..
+#echo "openCV Installation finished"
 
 echo "Started installing MQTT"
 #For Python - MQTT python version
@@ -99,7 +107,7 @@ echo "MQTT installation finished"
 echo "Installing OpenPose dependencies"
 sudo apt-get install libprotobuf-dev
 sudo apt-get install libgoogle-glog-dev
-#sudo apt-get install libopencv-dev
+sudo apt-get install libopencv-dev
 sudo apt-get install libboost-all-dev
 sudo apt-get install libhdf5-serial-dev
 sudo apt-get install libatlas-base-dev
