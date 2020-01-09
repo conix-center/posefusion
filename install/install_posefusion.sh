@@ -91,13 +91,16 @@ git clone https://github.com/eclipse/paho.mqtt.c.git
 cd paho.mqtt.c
 git checkout v1.3.1
 
+
 sudo cmake -Bbuild -H. -DPAHO_WITH_SSL=ON -DPAHO_ENABLE_TESTING=OFF
 sudo cmake --build build/ --target install
 sudo ldconfig
+cd ../
 
 #Install Paho-Mqtt-Cpp
 git clone https://github.com/eclipse/paho.mqtt.cpp
 cd paho.mqtt.cpp
+
 cmake -Bbuild -H. -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE
 sudo cmake --build build/ --target install
 sudo ldconfig
@@ -132,10 +135,12 @@ sudo make -j`nproc`
 #Required to include openpose cpp as library in global enviornment file
 sudo make install
 
+cd ..
 #Added PoseFusion dependency in CMake of openpose
+echo '' >> CMakeLists.txt
 echo '#Added PoseFusion dependency' >> CMakeLists.txt
 echo 'add_subdirectory(posefusion)' >> CMakeLists.txt
-cd ..
+
 echo "Openpose installation finished"
 
 echo "Clonning posefusion"
@@ -162,6 +167,7 @@ read  -n 1 -p "Continue:" keypress
 
 cd build/
 sudo make -j`nproc`
+sudo make install
 cd ../..
 
 echo "Creating python virtual enviornment"
