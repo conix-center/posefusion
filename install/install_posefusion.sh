@@ -5,6 +5,8 @@ echo "Started setup to install posefusion"
 mkdir PoseFusion
 cd PoseFusion
 
+sudo apt-get update
+
 echo "Started Installing Git"
 sudo apt-get install git
 echo "Git installation finished"
@@ -52,14 +54,15 @@ git checkout 3.4
 cd ..
 
 echo "Complete Configuration and Generation on CMake and press any key to continue installation"
-echo "Note set OPENCV_EXTRA_MODULES_PATH: to the PoseFusion/openCV/opencv_contrib/modules"
+echo "Note : Set OPENCV_EXTRA_MODULES_PATH: to the PoseFusion/openCV/opencv_contrib/modules"
+echo "Note : Due to a current bug in CUDA disable cudacodec option. For more info see OpenCV_contrib issue 1786"
 sudo cmake-gui
 
 #Wait till user presses any key
 read  -n 1 -p "Continue:" keypress
 
-cd build/
-sudo make -j7
+cd opencv/build/
+sudo make -j`nproc`
 
 #Required to include openpose cpp as library in global enviornment file
 sudo make install
@@ -96,7 +99,7 @@ echo "MQTT installation finished"
 echo "Installing OpenPose dependencies"
 sudo apt-get install libprotobuf-dev
 sudo apt-get install libgoogle-glog-dev
-sudo apt-get install libopencv-dev
+#sudo apt-get install libopencv-dev
 sudo apt-get install libboost-all-dev
 sudo apt-get install libhdf5-serial-dev
 sudo apt-get install libatlas-base-dev
