@@ -13,3 +13,5 @@ and run :
 mosquitto_sub -v -t realm/s/# -h oz.andrew.cmu.edu
 mosquitto_sub -v -t realm/s/# -h oz.andrew.cmu.edu | grep -v cube
 
+Arena Link : 
+https://xr.andrew.cmu.edu/?scene=openpose
