@@ -187,7 +187,9 @@ echo "Installing required python libraries"
 #sudo apt-get install python-pip
 
 #pip install --user --requirement requirements.txt
-sudo pip install --user --requirement ../requirements.txt
+#sudo pip install --user --requirement ../requirements.txt
+sudo pyenv-posefusion/bin/python3 -m pip install python_opencv
+sudo pyenv-posefusion/bin/python3 -m pip install mathplotlib
 
 #Deactivate Python Virtual Enviornment
 deactivate
