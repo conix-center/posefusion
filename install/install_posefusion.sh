@@ -32,6 +32,30 @@ sudo snap install --classic cmake
 
 echo "CMake Installation finished"
 
+
+echo "Started installing openCV"
+mkdir openCV
+cd openCV
+sudo apt-get install build-essential
+sudo apt-get install libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
+git clone https://github.com/opencv/opencv.git
+git clone https://github.com/opencv/opencv_contrib.git
+echo "Complete Configuration and Generation on CMake and press any key to continue installation"
+echo "Note set OPENCV_EXTRA_MODULES_PATH: to the PoseFusion/openCV/opencv_contrib/modules"
+cmake-gui
+
+#Wait till user presses any key
+read  -n 1 -p "Continue:" keypress
+
+cd build/
+make -j7
+
+#Required to include openpose cpp as library in global enviornment file
+make install
+
+cd ..
+echo "openCV Installation finished"
+
 echo "Started installing MQTT"
 #For Python - MQTT python version
 pip3 install paho-mqtt python-etcd
@@ -79,17 +103,17 @@ git clone https://github.com/CMU-Perceptual-Computing-Lab/caffe.git
 cd ../
 
 echo "Complete Configuration and Generation on CMake and press any key to continue installation"
-sudo cmake-gui
+cmake-gui
 
 #Wait till user presses any key
 read  -n 1 -p "Continue:" keypress
 
 cd build/
-sudo make -j`nproc`
+make -j`nproc`
 
 #Required to include openpose cpp as library in global enviornment file
-sudo make install
-
+make install
+cd ..
 echo "Openpose installation finished"
 
 echo "Clonning posefusion"
@@ -101,6 +125,16 @@ read  -n 1 -p "Lambda Id:" lambdaId
 
 #sed -i -e 's/.*static std::string CLIENT_ID.*/static std::string CLIENT_ID   = "lambda-$lambdaId"; // "lambda-3";/' posefusion/posefusion-client.cpp
 sed -i -e "s/.*static std::string CLIENT_ID.*/static std::string CLIENT_ID   = \"lambda-$lambdaId\"; \/\/ \"lambda-3\";/" posefusion/posefusion-client.cpp
+
+echo "Complete Configuration and Generation on CMake and press any key to continue installation"
+cmake-gui
+
+#Wait till user presses any key
+read  -n 1 -p "Continue:" keypress
+
+cd build/
+make -j`nproc`
+cd ../..
 
 echo "Creating python virtual enviornment"
 sudo apt-get install python3-venv
