@@ -80,7 +80,7 @@ echo "Cuda installation finished"
 
 echo "Started installing MQTT"
 #For Python - MQTT python version
-pip3 install paho-mqtt python-etcd
+#pip3 install paho-mqtt python-etcd
 
 #MQTT Dependencies
 sudo apt-get install libssl-dev 
@@ -190,6 +190,7 @@ echo "Installing required python libraries"
 #sudo pip install --user --requirement ../requirements.txt
 sudo pyenv-posefusion/bin/python3 -m pip install opencv-python
 sudo pyenv-posefusion/bin/python3 -m pip install matplotlib
+sudo pyenv-posefusion/bin/python3 -m pip install paho-mqtt python-etcd
 
 #Deactivate Python Virtual Enviornment
 deactivate
