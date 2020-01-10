@@ -377,8 +377,8 @@ def calculateGitter(saved3DCoordinates, body_set_list):
 	
 
 	for body in body_set_list:
-    	np.linalg.norm(saved3DCoordinates[:,:,body] - saved3DCoordinates_previousFrame[:,:,body], 
-
+    	gitter = np.linalg.norm(saved3DCoordinates[:,:,body] - saved3DCoordinates_previousFrame[:,:,body], ord = 2) 
+        print(f'Gitter for body-{body} is : {gitter}')
 
     saved3DCoordinates_previousFrame = copy.deepcopy(saved3DCoordinates)
 
@@ -613,6 +613,9 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
         body_valid = 0
 
     # print("Number of bodies to be sent:", body_valid)
+
+    #Print the gitter 
+    calculateGitter(saved3DCoordinates, body_valid)
 
     return saved3DCoordinates, body_valid
 
