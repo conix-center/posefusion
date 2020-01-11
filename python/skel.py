@@ -365,11 +365,11 @@ def on_message(client, userdata, message):
         drawPersonText(Person, "name", LEar, "red")
         last_ts_person[Person] = time.time()
 
-        #TODO - GRG : What are these reference lines for?
-        drawLine("Ref_line","line1",[[0, 0, 0], [0, 2, 0]], "#000000", action='create')
-        drawLine("Ref_line","line2",[[1, 0, 0], [1, 2, 0]], "#000000", action='create')
-        drawLine("Ref_line","line3",[[0, 0, 1], [0, 2, 1]], "#000000", action='create')
-        drawLine("Ref_line","line4",[[1, 0, 1], [1, 2, 1]], "#000000", action='create')
+        # #TODO - GRG : What are these reference lines for?
+        # drawLine("Ref_line","line1",[[0, 0, 0], [0, 2, 0]], "#000000", action='create')
+        # drawLine("Ref_line","line2",[[1, 0, 0], [1, 2, 0]], "#000000", action='create')
+        # drawLine("Ref_line","line3",[[0, 0, 1], [0, 2, 1]], "#000000", action='create')
+        # drawLine("Ref_line","line4",[[1, 0, 1], [1, 2, 1]], "#000000", action='create')
 
 
 
