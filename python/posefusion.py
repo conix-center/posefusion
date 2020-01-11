@@ -357,8 +357,10 @@ def get3DPointsStereo(camera1, camera2):
         if (new_error < ERR_THRESHOLD):
             # print("GOOD [{}][{}] Body{}: {}".format(camera1, camera2, body, new_error))
             # Adjust y to put person on the ground if reference stereo camera
-            if (camera1 == 0):
-                pts3D[:,1] -= y_offset
+            # if (camera1 == 0):
+            #     pts3D[:,1] -= y_offset
+            #if (camera1 == 0):
+            #    pts3D[:,1] = np.dot(m_matrices, pts3D)
             
             print(f'Body-{body} 3D Pts: {pts3D}')
 
@@ -929,6 +931,9 @@ if __name__ == '__main__':
                              [0,1,0,y_offset],
                              [0,0,1,0]]
                             )
+
+    projs[0] = np.dot(K1, m_matrices[0])
+    projs[1] = np.dot(K2, m_matrices[1])
 
     if (transform_computed):
         affine = np.load(AFFINE_PATH)
