@@ -276,6 +276,9 @@ def on_connect(client, userdata, flags, rc):
 # send out draw commands on draw_path that match their coordinates
 def on_message(client, userdata, message):
 
+    #Draw a camera (box) to indicate the origin
+    drawCamera(99, [0, 0, 0], "#000000")
+
     #TODO - GRG : When is the camera drawn and for what?
     if (message.topic[:-1] == TOPIC_CAMERA[:-1]):
         theMessage=str(message.payload.decode("utf-8"))
