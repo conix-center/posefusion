@@ -1,6 +1,6 @@
 import time
 import random
-import numpy 
+import numpy
 import paho.mqtt.client as paho
 import json
 
@@ -10,12 +10,16 @@ TOPIC_CAMERA    = "/posefusion/camera/+"
 draw_path = "/topic/openpose"
 scene = "openpose"
 
-x_offset = 3
-y_offset = 0.1
-z_offset = -1.5
+# x_offset = 3
+# y_offset = 0.1
+# z_offset = -1.5
+
+x_offset = 0
+y_offset = 0
+z_offset = 0
 
 last_ts_person = {}
-for i in range(5): #Note : Initializing for 5 people 
+for i in range(5): #Note : Initializing for 5 people
     last_ts_person["Person" +str(i)] = 0
 
 #TODO - GRG : last_ts_check var is not updated at all
@@ -32,7 +36,7 @@ MESSAGE=""
 
 # 0: red, 1: green, 2: blue
 color_person = {
-    "Person0": "#FF0000", 
+    "Person0": "#FF0000",
     "Person1": "#00FF00",
     "Person2": "#0000FF",
 }
@@ -88,7 +92,7 @@ def drawLine(person,bodypart,arr, color, action='create'):
 
     # Generate JSON
     json_data = json.dumps(message)
-    
+
 
     # Publish message
     new_draw_path = "realm/s/" + scene + "/"
@@ -114,9 +118,15 @@ def refactorDraw(person, bodypart, arr, color, action='create'):
         # Iterate through each body part
         for i in range(len(arr)):
             if (arr[i][0] != 0) and (arr[i][1] != 0) and (arr[i][2] != 0):
-                x = x_offset-arr[i][0]
-                y = y_offset-arr[i][1]
-                z = z_offset+arr[i][2]
+                # x = x_offset-arr[i][0]
+                # y = y_offset-arr[i][1]
+                # z = z_offset+arr[i][2]
+                x = 1 - arr[i][0]
+                y = -1*arr[i][1]
+                z = arr[i][2]
+                # x = arr[i][0]
+                # y = arr[i][1]
+                # z = -1*arr[i][2]
                 data_str += str(x) + " " + str(y) + " " + str(z) + ", "
         data_str = data_str[:-2] # remove last comma
 
@@ -255,7 +265,7 @@ def tryDraw(person, bodypart, arr, color):
             lastx=x
             lasty=y
             lastz=z
-            
+
         partID = person+'_'+bodypart+'_'+str(counter)
         MESSAGE="thickline_"+partID+","+FORMAT.format(lastx)+','+FORMAT.format(lasty)+','+FORMAT.format(lastz)+','+FORMAT.format(x)+','+FORMAT.format(y)+','+FORMAT.format(z)+",0,12,1,1,"+color+","+onoff
         client.publish(draw_path+"/thickline_"+partID,MESSAGE)
@@ -282,7 +292,7 @@ def on_message(client, userdata, message):
     drawLine("origin_line","line-x",[[0, 0, 0], [1, 0, 0]], "#FF0000", action='create')
     drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create')
     drawLine("origin_line","line-z",[[0, 0, 0], [0, 0, 1]], "#0000FF", action='create')
-    
+
     #TODO - GRG : When is the camera drawn and for what?
     if (message.topic[:-1] == TOPIC_CAMERA[:-1]):
         theMessage=str(message.payload.decode("utf-8"))
@@ -295,7 +305,7 @@ def on_message(client, userdata, message):
         y_offset = 1.8
         camera = int(message.topic[-1])
         if (camera == 0):
-            #The camera are at approx height of about 70inch 
+            #The camera are at approx height of about 70inch
             #[x,y,z] = [0, y_offset, 0]
             color = "#FF0000"
         elif (camera == 1):
@@ -375,7 +385,7 @@ def on_message(client, userdata, message):
 
 
 if __name__ == '__main__':
-        
+
     ################## MQTT Init ##################
     client = paho.Client()
     client.on_connect=on_connect
