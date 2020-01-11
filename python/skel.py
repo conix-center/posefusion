@@ -277,7 +277,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, message):
 
     #Draw a camera (box) to indicate the origin
-    drawCamera(99, [0, 0, 0], "#FFFFFF")
+    #drawCamera(99, [0, 0, 0], "#FFFFFF")
 
     drawLine("origin_line","line-x",[[0, 0, 0], [1, 0, 0]], "#FF0000", action='create')
     drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create')
