@@ -899,6 +899,8 @@ if __name__ == '__main__':
         projs = prev_projs["projs"]
         m_matrices = prev_projs["m_matrices"]
         print("Loaded projections for {} cameras from [{}]".format(prev_projs["num_cameras"], date_time))
+        print(f'Loaded projections of camera-1 : {m_matrices[0]}')
+        print(f'Loaded projections of camera-2 : {m_matrices[1]}')
     # Compute new projection matrices
     else:
         print("Running autocalibration")
@@ -912,6 +914,21 @@ if __name__ == '__main__':
 
         # Save resulting projection matrices
         np.savez(PROJS_PATH, num_cameras = NUM_CAMERAS, K1=K1, K2=K2, projs=projs, m_matrices = m_matrices,date=int(time.time()))
+
+    baseline = 1
+    y_offset = 1.8
+    #TODO - GRG : Manually setting the camera matrix of stereo pair 1 for now
+    m_matrices[0] = np.array(
+                            [[1,0,0,0],
+                             [0,1,0,y_offset],
+                             [0,0,1,0]]
+                            )
+
+    m_matrices[1] = np.array(
+                            [[1,0,0,baseline],
+                             [0,1,0,y_offset],
+                             [0,0,1,0]]
+                            )
 
     if (transform_computed):
         affine = np.load(AFFINE_PATH)
