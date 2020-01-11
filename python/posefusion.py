@@ -372,15 +372,19 @@ def get3DPointsStereo(camera1, camera2):
 Function to calculate the gitter in the 3D points i.e. the error in 3D poitns of a person compared to previous frame data
 '''
 import copy
-global saved3DCoordinates_previousFrame = np.empty((25, 3, total_skels*2))
-def calculateGitter(saved3DCoordinates, body_set_list):
-	
+#global saved3DCoordinates_previousFrame = np.empty((25, 3, total_skels*2))
 
-	for body in body_set_list:
-    	gitter = np.linalg.norm(saved3DCoordinates[:,:,body] - saved3DCoordinates_previousFrame[:,:,body], ord = 2) 
-        print(f'Gitter for body-{body} is : {gitter}')
+saved3DCoordinates_previousFrame = np.empty((25, 3))
+
+
+def calculateGitter_of_body0(saved3DCoordinates):
+    global saved3DCoordinates_previousFrame
+
+    gitter = np.linalg.norm(saved3DCoordinates - saved3DCoordinates_previousFrame, ord = 2)
+    print(f'Gitter for body-0 is : {gitter}')
 
     saved3DCoordinates_previousFrame = copy.deepcopy(saved3DCoordinates)
+
 
 '''
 This calculates the Transformation matrix R & T from dataset A to dataset B.
@@ -615,7 +619,8 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
     # print("Number of bodies to be sent:", body_valid)
 
     #Print the gitter 
-    calculateGitter(saved3DCoordinates, body_valid)
+    if saved3DCoordinates.shape[-1] > 0:
+        calculateGitter_of_body0(saved3DCoordinates[:,:,0])
 
     return saved3DCoordinates, body_valid
 
