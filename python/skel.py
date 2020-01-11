@@ -279,6 +279,10 @@ def on_message(client, userdata, message):
     #Draw a camera (box) to indicate the origin
     drawCamera(99, [0, 0, 0], "#000000")
 
+    drawLine("origin_line","line-x",[[0, 0, 0], [1, 0, 0]], "#FF0000", action='create')
+    drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create')
+    drawLine("origin_line","line-z",[[0, 0, 0], [0, 0, 1]], "#0000FF", action='create')
+    
     #TODO - GRG : When is the camera drawn and for what?
     if (message.topic[:-1] == TOPIC_CAMERA[:-1]):
         theMessage=str(message.payload.decode("utf-8"))
