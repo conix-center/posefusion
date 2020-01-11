@@ -291,10 +291,15 @@ def on_message(client, userdata, message):
         y = float(splits[1])
         z = float(splits[2])
 
+        baseline = 1
+        y_offset = 1.8
         camera = int(message.topic[-1])
         if (camera == 0):
+            #The camera are at approx height of about 70inch 
+            [x,y,z] = [0, y_offset, 0]
             color = "#FF0000"
         elif (camera == 1):
+            [x,y,z] = [baseline, y_offset, 0]
             color = "#00FF00"
         elif (camera == 2):
             color = "#0000FF"
