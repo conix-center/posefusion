@@ -937,18 +937,19 @@ if __name__ == '__main__':
 
     R1 = R2 = np.array(
                         [[-1,0,0],
-                         [0,-1,0],
+                         [0,1,0],
                          [0,0,1]],
                          dtype='float64'
                         )
-    T1 = np.array([0, y_offset, 0]).T
-    T2 = np.array([baseline, y_offset, 0]).T
+    T1 = np.array([0, -y_offset, 0]).T
+    T2 = np.array([-baseline, -y_offset, 0]).T
     
     # m_matrices[0] = np.column_stack((R1, np.dot(R1, T1)))
     # m_matrices[1] = np.column_stack((R2, np.dot(R2, T2)))
     m_matrices[0] = np.column_stack((R1, T1))
     m_matrices[1] = np.column_stack((R2, T2))
 
+    #Note : Projection matrix is transformation from 3D coordinate to 2D coordinate system
     projs[0] = np.dot(K1, m_matrices[0])
     projs[1] = np.dot(K2, m_matrices[1])
 
