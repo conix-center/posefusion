@@ -98,6 +98,18 @@ def drawLine(person,bodypart,arr, color, action='create'):
     new_draw_path = "realm/s/" + scene + "/"
     client.publish(new_draw_path + message['object_id'], json_data)
 
+def coordCorrection(arr):
+    # x = x_offset-arr[i][0]
+    # y = y_offset-arr[i][1]
+    # z = z_offset+arr[i][2]
+    x = 1 - arr[0]
+    y = -1*arr[1]
+    z = arr[2]
+    # x = arr[i][0]
+    # y = arr[i][1]
+    # z = -1*arr[i][2]
+
+    return [x,y,z]
 #TODO - GRG : Where is the message structure defined/documentation?
 def refactorDraw(person, bodypart, arr, color, action='create'):
     # partID
@@ -118,15 +130,7 @@ def refactorDraw(person, bodypart, arr, color, action='create'):
         # Iterate through each body part
         for i in range(len(arr)):
             if (arr[i][0] != 0) and (arr[i][1] != 0) and (arr[i][2] != 0):
-                # x = x_offset-arr[i][0]
-                # y = y_offset-arr[i][1]
-                # z = z_offset+arr[i][2]
-                x = 1 - arr[i][0]
-                y = -1*arr[i][1]
-                z = arr[i][2]
-                # x = arr[i][0]
-                # y = arr[i][1]
-                # z = -1*arr[i][2]
+                [x,y,z] = coordCorrection(arr[i])
                 data_str += str(x) + " " + str(y) + " " + str(z) + ", "
         data_str = data_str[:-2] # remove last comma
 
@@ -211,9 +215,10 @@ def drawPersonText(person,bodypart, arr, color, action='create'):
     # import ipdb; ipdb.set_trace()
 
     position = {}
-    position['x'] = x_offset-arr[0]
-    position['y'] = y_offset-arr[1]
-    position['z'] = z_offset+arr[2]
+    [x,y,z] = coordCorrection(arr)
+    position['x'] = x
+    position['y'] = y
+    position['z'] = z
     data['position'] = position
 
 
