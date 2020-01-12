@@ -269,6 +269,7 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     
     # For each
     pts4D = cv2.triangulatePoints(camera_1, camera_2, pt1, pt2).T
+    #pts4D = cv2.triangulatePoints(camera_2, camera_1, pt2, pt1).T
 
     # Convert from homogeneous coordinates to 3D
     pts3D = pts4D[:, :3]/np.repeat(pts4D[:, 3], 3).reshape(-1, 3)
@@ -736,6 +737,7 @@ find_new_mapping: find the new mapping of bodies to points
     Output: mapping, new mapping
             prev_updated, replacement for the previous body array
 '''
+#TODO - GRG : Check this method
 def find_new_mapping(prev, new, numBodies, prev_mapping):
     # Initialize the new mapping from the previous one
     mapping = prev_mapping.copy()
@@ -856,8 +858,10 @@ publish_camera: generate message to be sent through MQTT of the [tx, ty, tz] vec
 '''
 def publish_camera(projection):
     # zero_coord = np.array([1, 1, 1, 1])    
-    zero_coord = np.array([0, 0, 0, 1])      
-    point = np.dot(projection, zero_coord)
+    # zero_coord = np.array([0, 0, 0, 1])      
+    zero_coord = np.array([0, 0, 0])      
+    # point = np.dot(projection, zero_coord)
+    point = np.dot(projection[:,:-1].T, zero_coord-projection[:,-1])
     message = json.dumps(point.flatten().tolist())
     message = message.strip('[]')
     return message
@@ -918,7 +922,7 @@ if __name__ == '__main__':
         np.savez(PROJS_PATH, num_cameras = NUM_CAMERAS, K1=K1, K2=K2, projs=projs, m_matrices = m_matrices,date=int(time.time()))
 
     baseline = 1
-    y_offset = 1.8
+    camera_ht = 1.8
     #TODO - GRG : Manually setting the camera matrix of stereo pair 1 for now
 
     # m_matrices[0] = np.array(
@@ -937,12 +941,12 @@ if __name__ == '__main__':
 
     R1 = R2 = np.array(
                         [[-1,0,0],
-                         [0,1,0],
+                         [0,-1,0],
                          [0,0,1]],
                          dtype='float64'
                         )
-    T1 = np.array([0, -y_offset, 0]).T
-    T2 = np.array([-baseline, -y_offset, 0]).T
+    T1 = np.array([0, camera_ht, 0]).T
+    T2 = np.array([baseline, camera_ht, 0]).T
     
     # m_matrices[0] = np.column_stack((R1, np.dot(R1, T1)))
     # m_matrices[1] = np.column_stack((R2, np.dot(R2, T2)))
