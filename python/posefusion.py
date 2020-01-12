@@ -282,7 +282,7 @@ def triangulate(C1, C2, pts1, pts2):
         P.append(p)
     
         err += (np.linalg.norm([x1, y1]-p1_e)**2 + np.linalg.norm([x2, y2]-p2_e)**2)
-    print(err)   
+    print(f'GRG Reprojection err : {err}')   
     return np.array(P), err
 
 
@@ -297,10 +297,10 @@ triangulateTwoBodies: obtain 3D reconstruction of body given body coordinates fr
             error_mat, reprojection error per body part
             pts3D, 3D coordinates obtained from triangulation
 '''
-def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
+def triangulateTwoBodies(camera_1, camera_2, pts1, pts2):
     # Transform into appropriate format for OpenCV
-    pt1 = np.vstack((pt1[:,0], pt1[:,1]))
-    pt2 = np.vstack((pt2[:,0], pt2[:,1]))
+    pt1 = np.vstack((pts1[:,0], pts1[:,1]))
+    pt2 = np.vstack((pts2[:,0], pts2[:,1]))
 
     #Note - on cv2.triangulatePoints function, the 3D point is found from the equation that 
     # x = CX where x is 2D image point, X is the 3D world point, C is camera projection matrix (3D to 2D conversion matrix)
@@ -309,8 +309,8 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     # Sub-note - all points are in homogenious coordinate in the above equations
     
     # For each
-    pts4D = cv2.triangulatePoints(camera_1, camera_2, pt1, pt2).T
-    pts4D = triangulate(camera_1, camera_2, pts1, pts2)
+    #pts4D = cv2.triangulatePoints(camera_1, camera_2, pt1, pt2).T
+    pts4D, error1 = triangulate(camera_1, camera_2, pts1, pts2)
     #pts4D = cv2.triangulatePoints(camera_2, camera_1, pt2, pt1).T
 
     # Convert from homogeneous coordinates to 3D
@@ -938,6 +938,18 @@ if __name__ == '__main__':
 
     # Default intrinsic matrices
     K1 = K2 = np.load(INTRINSICS_PATH)["mtx"]     
+
+# K1,K2 the Intrinsic matrix 
+# 0:array([299.57255186,   0.        , 351.24615454])
+# 1:array([  0.        , 356.09024225, 214.95575622])
+# 2:array([0., 0., 1.])
+
+    K1 = K2 = np.array([
+                        [299.57255186,   0.        , 501.24615454],
+                        [  0.        , 356.09024225, 314.95575622],
+                        [0., 0., 1.]
+                        ], dtype='float64' 
+                        )
 
     # Load projection matrices
     if (RUN_CALIBRATION == False):
