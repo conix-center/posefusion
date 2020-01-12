@@ -245,6 +245,47 @@ def filter_body(body):
     
     return True
     
+
+'''
+Q3.2: Triangulate a set of 2D coordinates in the image to a set of 3D points.
+    Input:  C1, the 3x4 camera matrix
+            pts1, the Nx2 matrix with the 2D image coordinates per row
+            C2, the 3x4 camera matrix
+            pts2, the Nx2 matrix with the 2D image coordinates per row
+    Output: P, the Nx3 matrix with the corresponding 3D points per row
+            err, the reprojection error.
+'''
+def triangulate(C1, C2, pts1, pts2):
+    # Replace pass by your implementation
+    P = []
+    err = 0
+   
+    for [x1, y1], [x2, y2] in zip(pts1, pts2):
+        A = np.concatenate([
+                 [y1*C1[2,:] - C1[1,:]]
+                ,[C1[0,:] - x1*C1[2,:]]
+                ,[y2*C2[2,:] - C2[1,:]]  
+                ,[C2[0,:] - x2*C2[2,:]] 
+        ])
+
+        u,s,v = np.linalg.svd(A)
+        p = v[-1]
+        #p = (p/p[-1])
+
+        p1_e = np.matmul(C1,p)
+        p2_e = np.matmul(C2,p)
+        p1_e = (p1_e/p1_e[-1])[:-1]
+        p2_e = (p2_e/p2_e[-1])[:-1]
+        
+        
+        # P.append(p[:-1])
+        P.append(p)
+    
+        err += (np.linalg.norm([x1, y1]-p1_e)**2 + np.linalg.norm([x2, y2]-p2_e)**2)
+    print(err)   
+    return np.array(P), err
+
+
 '''
 triangulateTwoBodies: obtain 3D reconstruction of body given body coordinates from two different 
                       cameras.
@@ -269,6 +310,7 @@ def triangulateTwoBodies(camera_1, camera_2, pt1, pt2):
     
     # For each
     pts4D = cv2.triangulatePoints(camera_1, camera_2, pt1, pt2).T
+    pts4D = triangulate(camera_1, camera_2, pts1, pts2)
     #pts4D = cv2.triangulatePoints(camera_2, camera_1, pt2, pt1).T
 
     # Convert from homogeneous coordinates to 3D
