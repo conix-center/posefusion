@@ -927,7 +927,7 @@ if __name__ == '__main__':
                             )
 
     m_matrices[1] = np.array(
-                            [[1,0,0,-baseline],
+                            [[1,0,0,baseline],
                              [0,1,0,y_offset],
                              [0,0,1,0]]
                             )
