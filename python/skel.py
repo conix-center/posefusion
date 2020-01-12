@@ -105,9 +105,9 @@ def coordCorrection(arr):
     # x = 1 - arr[0]
     # y = -1*arr[1]
     # z = arr[2]
-    x = arr[i][0]
-    y = arr[i][1]
-    z = arr[i][2]
+    x = arr[0]
+    y = arr[1]
+    z = arr[2]
 
     return [x,y,z]
 #TODO - GRG : Where is the message structure defined/documentation?
