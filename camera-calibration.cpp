@@ -7,9 +7,12 @@ using namespace std;
 using namespace cv;
 
 const string FILEPATH = "./media/matrices.xml";
-const int BOARD_WIDTH = 6;
-const int BOARD_HEIGHT = 8;
-const float SQUARE_SIZE = 0.115;
+// const int BOARD_WIDTH = 6; //80cm
+// const int BOARD_HEIGHT = 8; //103cm
+// const float SQUARE_SIZE = 0.115; //11.43cm
+const int BOARD_WIDTH = 6; //80cm - shouldn't be acutal width and height must be the number of sqaure intersection points along the horizontal and vertical axis
+const int BOARD_HEIGHT = 8; //103cm
+const float SQUARE_SIZE = 1.14; //11.4cm
 const bool VERBOSE = true;
 const bool CHECKCORNERS = true;
 
