@@ -1,0 +1,26 @@
+Calibrating camera (intrinsics) with points from 262 images...
+
+Intrinsics:
+Re-projection error - cv::calibrateCamera vs. calcReprojectionErrors:	0.806696 vs. 0.806696
+Intrinsics_K:
+[753.6412388549141, 0, 627.6217759928232;
+ 0, 753.892100491527, 355.1896481269448;
+ 0, 0, 1]
+Intrinsics_distCoeff:
+[0.9123249804360222;
+ -1.468621568469073;
+ 0.0004347642659102805;
+ -0.0001957118724493863;
+ -0.6560861553851746;
+ 0.6710345722076936;
+ -0.880020317784341;
+ -1.006786203972356;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0]
+ 
+Intrinsic calibration completed!
+OpenPose calibration toolbox successfully finished. Total time: 4876.533222 seconds.

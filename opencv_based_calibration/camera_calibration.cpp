@@ -2,7 +2,9 @@
 #include <sstream>
 #include <time.h>
 #include <stdio.h>
+#include <unistd.h>
 
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -446,8 +448,17 @@ static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat
 {
 
     cameraMatrix = Mat::eye(3, 3, CV_64F);
+
+
     if( s.flag & CV_CALIB_FIX_ASPECT_RATIO )
         cameraMatrix.at<double>(0,0) = 1.0;
+
+    //Set the cameraMatrix values
+    cameraMatrix.at<double>(0,0) = 299.57255186;
+    cameraMatrix.at<double>(0,2) = 351.24615454;
+    cameraMatrix.at<double>(1,1) = 356.09024225;
+    cameraMatrix.at<double>(1,2) = 214.95575622;
+
 
     distCoeffs = Mat::zeros(8, 1, CV_64F);
 

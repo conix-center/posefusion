@@ -6,7 +6,7 @@
   <BoardSize_Height>8</BoardSize_Height>
   
   <!-- The size of a square in some user defined metric system (pixel, millimeter)-->
-  <Square_Size>1.14</Square_Size> <!-- Using meters instead of millimeters scale-->
+  <Square_Size>1140</Square_Size> <!-- Using meters instead of millimeters scale-->
   
   <!-- The type of input used for camera calibration. One of: CHESSBOARD CIRCLES_GRID ASYMMETRIC_CIRCLES_GRID -->
   <Calibrate_Pattern>"CHESSBOARD"</Calibrate_Pattern>
@@ -21,15 +21,15 @@
   <Input_FlipAroundHorizontalAxis>0</Input_FlipAroundHorizontalAxis>
   
   <!-- Time delay between frames in case of camera. -->
-  <Input_Delay>200</Input_Delay>	
+  <Input_Delay>1000</Input_Delay>	
   
   <!-- How many frames to use, for calibration. -->
-  <Calibrate_NrOfFrameToUse>25</Calibrate_NrOfFrameToUse>
+  <Calibrate_NrOfFrameToUse>300</Calibrate_NrOfFrameToUse>
   <!-- Consider only fy as a free parameter, the ratio fx/fy stays the same as in the input cameraMatrix. 
 	   Use or not setting. 0 - False Non-Zero - True-->
-  <Calibrate_FixAspectRatio> 1 </Calibrate_FixAspectRatio>
+  <Calibrate_FixAspectRatio> 0 </Calibrate_FixAspectRatio>
   <!-- If true (non-zero) tangential distortion coefficients  are set to zeros and stay zero.-->
-  <Calibrate_AssumeZeroTangentialDistortion>0</Calibrate_AssumeZeroTangentialDistortion>
+  <Calibrate_AssumeZeroTangentialDistortion>1</Calibrate_AssumeZeroTangentialDistortion>
   <!-- If true (non-zero) the principal point is not changed during the global optimization.-->
   <Calibrate_FixPrincipalPointAtTheCenter> 0 </Calibrate_FixPrincipalPointAtTheCenter>
   

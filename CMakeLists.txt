@@ -28,3 +28,5 @@ target_link_libraries(camera-calibration
 target_link_libraries(image-grab
 	${examples_3rdparty_libraries}
 )
+
+add_subdirectory(opencv_based_calibration)

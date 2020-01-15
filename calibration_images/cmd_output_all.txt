@@ -1,0 +1,803 @@
+grg@lambda-1:~/PoseFusion/openpose$ ./build/examples/calibration/calibration.bin --mode 1 --grid_square_size_mm 114.0 --grid_number_inner_corners "8x6" --camera_serial_number logitech_brio --calibration_image_dir ./posefusion/calibration_images/
+Starting OpenPose calibration toolbox...
+Running calibration (intrinsic parameters)...
+
+Image 1/344
+Chessboard not found in image ./posefusion/calibration_images/000000000036_rendered.png.
+
+Image 2/344
+
+Image 3/344
+
+Image 4/344
+Chessboard not found in image ./posefusion/calibration_images/000000000039_rendered.png.
+
+Image 5/344
+Chessboard not found in image ./posefusion/calibration_images/000000000040_rendered.png.
+
+Image 6/344
+Chessboard not found in image ./posefusion/calibration_images/000000000041_rendered.png.
+
+Image 7/344
+Chessboard not found in image ./posefusion/calibration_images/000000000042_rendered.png.
+
+Image 8/344
+Chessboard found at lower resolution (640x360).
+
+Image 9/344
+
+Image 10/344
+
+Image 11/344
+
+Image 12/344
+
+Image 13/344
+
+Image 14/344
+
+Image 15/344
+
+Image 16/344
+
+Image 17/344
+
+Image 18/344
+
+Image 19/344
+
+Image 20/344
+
+Image 21/344
+
+Image 22/344
+
+Image 23/344
+
+Image 24/344
+
+Image 25/344
+
+Image 26/344
+
+Image 27/344
+
+Image 28/344
+
+Image 29/344
+
+Image 30/344
+
+Image 31/344
+Chessboard not found in image ./posefusion/calibration_images/000000000066_rendered.png.
+
+Image 32/344
+Chessboard not found in image ./posefusion/calibration_images/000000000067_rendered.png.
+
+Image 33/344
+Chessboard not found in image ./posefusion/calibration_images/000000000068_rendered.png.
+
+Image 34/344
+Chessboard not found in image ./posefusion/calibration_images/000000000069_rendered.png.
+
+Image 35/344
+Chessboard not found in image ./posefusion/calibration_images/000000000070_rendered.png.
+
+Image 36/344
+Chessboard not found in image ./posefusion/calibration_images/000000000071_rendered.png.
+
+Image 37/344
+Chessboard not found in image ./posefusion/calibration_images/000000000072_rendered.png.
+
+Image 38/344
+Chessboard not found in image ./posefusion/calibration_images/000000000073_rendered.png.
+
+Image 39/344
+Chessboard not found in image ./posefusion/calibration_images/000000000074_rendered.png.
+
+Image 40/344
+
+Image 41/344
+Chessboard not found in image ./posefusion/calibration_images/000000000076_rendered.png.
+
+Image 42/344
+
+Image 43/344
+
+Image 44/344
+
+Image 45/344
+
+Image 46/344
+
+Image 47/344
+
+Image 48/344
+
+Image 49/344
+
+Image 50/344
+
+Image 51/344
+
+Image 52/344
+
+Image 53/344
+
+Image 54/344
+
+Image 55/344
+
+Image 56/344
+
+Image 57/344
+
+Image 58/344
+
+Image 59/344
+
+Image 60/344
+Chessboard not found in image ./posefusion/calibration_images/000000000095_rendered.png.
+
+Image 61/344
+Chessboard not found in image ./posefusion/calibration_images/000000000096_rendered.png.
+
+Image 62/344
+Chessboard not found in image ./posefusion/calibration_images/000000000097_rendered.png.
+
+Image 63/344
+Chessboard not found in image ./posefusion/calibration_images/000000000098_rendered.png.
+
+Image 64/344
+
+Image 65/344
+
+Image 66/344
+
+Image 67/344
+
+Image 68/344
+
+Image 69/344
+
+Image 70/344
+
+Image 71/344
+
+Image 72/344
+
+Image 73/344
+
+Image 74/344
+Chessboard not found in image ./posefusion/calibration_images/000000000109_rendered.png.
+
+Image 75/344
+Chessboard not found in image ./posefusion/calibration_images/000000000110_rendered.png.
+
+Image 76/344
+Chessboard not found in image ./posefusion/calibration_images/000000000111_rendered.png.
+
+Image 77/344
+
+Image 78/344
+
+Image 79/344
+
+Image 80/344
+
+Image 81/344
+
+Image 82/344
+
+Image 83/344
+
+Image 84/344
+
+Image 85/344
+
+Image 86/344
+
+Image 87/344
+
+Image 88/344
+
+Image 89/344
+
+Image 90/344
+
+Image 91/344
+
+Image 92/344
+
+Image 93/344
+
+Image 94/344
+
+Image 95/344
+
+Image 96/344
+Chessboard not found in image ./posefusion/calibration_images/000000000131_rendered.png.
+
+Image 97/344
+
+Image 98/344
+
+Image 99/344
+
+Image 100/344
+
+Image 101/344
+
+Image 102/344
+
+Image 103/344
+
+Image 104/344
+
+Image 105/344
+
+Image 106/344
+
+Image 107/344
+
+Image 108/344
+
+Image 109/344
+
+Image 110/344
+Chessboard not found in image ./posefusion/calibration_images/000000000153_rendered.png.
+
+Image 111/344
+Chessboard not found in image ./posefusion/calibration_images/000000000154_rendered.png.
+
+Image 112/344
+Chessboard not found in image ./posefusion/calibration_images/000000000155_rendered.png.
+
+Image 113/344
+Chessboard not found in image ./posefusion/calibration_images/000000000156_rendered.png.
+
+Image 114/344
+Chessboard not found in image ./posefusion/calibration_images/000000000157_rendered.png.
+
+Image 115/344
+Chessboard not found in image ./posefusion/calibration_images/000000000158_rendered.png.
+
+Image 116/344
+Chessboard not found in image ./posefusion/calibration_images/000000000159_rendered.png.
+
+Image 117/344
+Chessboard found at lower resolution (640x360).
+
+Image 118/344
+Chessboard not found in image ./posefusion/calibration_images/000000000161_rendered.png.
+
+Image 119/344
+
+Image 120/344
+
+Image 121/344
+
+Image 122/344
+Chessboard not found in image ./posefusion/calibration_images/000000000165_rendered.png.
+
+Image 123/344
+Chessboard not found in image ./posefusion/calibration_images/000000000166_rendered.png.
+
+Image 124/344
+Chessboard not found in image ./posefusion/calibration_images/000000000167_rendered.png.
+
+Image 125/344
+Chessboard not found in image ./posefusion/calibration_images/000000000168_rendered.png.
+
+Image 126/344
+
+Image 127/344
+
+Image 128/344
+Chessboard not found in image ./posefusion/calibration_images/000000000171_rendered.png.
+
+Image 129/344
+
+Image 130/344
+
+Image 131/344
+Chessboard not found in image ./posefusion/calibration_images/000000000174_rendered.png.
+
+Image 132/344
+Chessboard not found in image ./posefusion/calibration_images/000000000175_rendered.png.
+
+Image 133/344
+Chessboard not found in image ./posefusion/calibration_images/000000000176_rendered.png.
+
+Image 134/344
+Chessboard not found in image ./posefusion/calibration_images/000000000177_rendered.png.
+
+Image 135/344
+Chessboard not found in image ./posefusion/calibration_images/000000000178_rendered.png.
+
+Image 136/344
+
+Image 137/344
+
+Image 138/344
+Chessboard not found in image ./posefusion/calibration_images/000000000181_rendered.png.
+
+Image 139/344
+Chessboard not found in image ./posefusion/calibration_images/000000000182_rendered.png.
+
+Image 140/344
+Chessboard not found in image ./posefusion/calibration_images/000000000183_rendered.png.
+
+Image 141/344
+Chessboard not found in image ./posefusion/calibration_images/000000000184_rendered.png.
+
+Image 142/344
+Chessboard not found in image ./posefusion/calibration_images/000000000185_rendered.png.
+
+Image 143/344
+
+Image 144/344
+Chessboard not found in image ./posefusion/calibration_images/000000000187_rendered.png.
+
+Image 145/344
+
+Image 146/344
+Chessboard not found in image ./posefusion/calibration_images/000000000189_rendered.png.
+
+Image 147/344
+Chessboard not found in image ./posefusion/calibration_images/000000000190_rendered.png.
+
+Image 148/344
+
+Image 149/344
+
+Image 150/344
+
+Image 151/344
+
+Image 152/344
+
+Image 153/344
+
+Image 154/344
+
+Image 155/344
+
+Image 156/344
+
+Image 157/344
+
+Image 158/344
+
+Image 159/344
+
+Image 160/344
+
+Image 161/344
+
+Image 162/344
+
+Image 163/344
+
+Image 164/344
+
+Image 165/344
+
+Image 166/344
+
+Image 167/344
+
+Image 168/344
+
+Image 169/344
+
+Image 170/344
+
+Image 171/344
+
+Image 172/344
+
+Image 173/344
+
+Image 174/344
+
+Image 175/344
+
+Image 176/344
+
+Image 177/344
+
+Image 178/344
+
+Image 179/344
+Chessboard not found in image ./posefusion/calibration_images/000000000222_rendered.png.
+
+Image 180/344
+
+Image 181/344
+Chessboard not found in image ./posefusion/calibration_images/000000000224_rendered.png.
+
+Image 182/344
+Chessboard found at lower resolution (640x360).
+
+Image 183/344
+
+Image 184/344
+
+Image 185/344
+
+Image 186/344
+
+Image 187/344
+
+Image 188/344
+
+Image 189/344
+
+Image 190/344
+
+Image 191/344
+
+Image 192/344
+
+Image 193/344
+
+Image 194/344
+
+Image 195/344
+
+Image 196/344
+
+Image 197/344
+
+Image 198/344
+
+Image 199/344
+
+Image 200/344
+
+Image 201/344
+
+Image 202/344
+
+Image 203/344
+
+Image 204/344
+
+Image 205/344
+
+Image 206/344
+
+Image 207/344
+
+Image 208/344
+
+Image 209/344
+Chessboard not found in image ./posefusion/calibration_images/000000000252_rendered.png.
+
+Image 210/344
+Chessboard not found in image ./posefusion/calibration_images/000000000253_rendered.png.
+
+Image 211/344
+Chessboard not found in image ./posefusion/calibration_images/000000000254_rendered.png.
+
+Image 212/344
+Chessboard not found in image ./posefusion/calibration_images/000000000255_rendered.png.
+
+Image 213/344
+Chessboard not found in image ./posefusion/calibration_images/000000000256_rendered.png.
+
+Image 214/344
+Chessboard not found in image ./posefusion/calibration_images/000000000257_rendered.png.
+
+Image 215/344
+Chessboard not found in image ./posefusion/calibration_images/000000000258_rendered.png.
+
+Image 216/344
+Chessboard not found in image ./posefusion/calibration_images/000000000259_rendered.png.
+
+Image 217/344
+Chessboard not found in image ./posefusion/calibration_images/000000000260_rendered.png.
+
+Image 218/344
+Chessboard not found in image ./posefusion/calibration_images/000000000261_rendered.png.
+
+Image 219/344
+Chessboard not found in image ./posefusion/calibration_images/000000000262_rendered.png.
+
+Image 220/344
+Chessboard not found in image ./posefusion/calibration_images/000000000263_rendered.png.
+
+Image 221/344
+Chessboard not found in image ./posefusion/calibration_images/000000000264_rendered.png.
+
+Image 222/344
+Chessboard not found in image ./posefusion/calibration_images/000000000265_rendered.png.
+
+Image 223/344
+Chessboard not found in image ./posefusion/calibration_images/000000000266_rendered.png.
+
+Image 224/344
+Chessboard not found in image ./posefusion/calibration_images/000000000267_rendered.png.
+
+Image 225/344
+
+Image 226/344
+
+Image 227/344
+
+Image 228/344
+
+Image 229/344
+
+Image 230/344
+
+Image 231/344
+
+Image 232/344
+Chessboard not found in image ./posefusion/calibration_images/000000000275_rendered.png.
+
+Image 233/344
+
+Image 234/344
+
+Image 235/344
+
+Image 236/344
+
+Image 237/344
+
+Image 238/344
+
+Image 239/344
+
+Image 240/344
+
+Image 241/344
+
+Image 242/344
+
+Image 243/344
+
+Image 244/344
+
+Image 245/344
+
+Image 246/344
+
+Image 247/344
+
+Image 248/344
+
+Image 249/344
+
+Image 250/344
+
+Image 251/344
+
+Image 252/344
+
+Image 253/344
+
+Image 254/344
+Chessboard not found in image ./posefusion/calibration_images/000000000297_rendered.png.
+
+Image 255/344
+
+Image 256/344
+
+Image 257/344
+
+Image 258/344
+
+Image 259/344
+
+Image 260/344
+
+Image 261/344
+
+Image 262/344
+
+Image 263/344
+
+Image 264/344
+
+Image 265/344
+
+Image 266/344
+
+Image 267/344
+
+Image 268/344
+
+Image 269/344
+
+Image 270/344
+Chessboard not found in image ./posefusion/calibration_images/000000000313_rendered.png.
+
+Image 271/344
+Chessboard not found in image ./posefusion/calibration_images/000000000314_rendered.png.
+
+Image 272/344
+
+Image 273/344
+
+Image 274/344
+
+Image 275/344
+
+Image 276/344
+
+Image 277/344
+
+Image 278/344
+
+Image 279/344
+
+Image 280/344
+
+Image 281/344
+
+Image 282/344
+
+Image 283/344
+
+Image 284/344
+Chessboard not found in image ./posefusion/calibration_images/000000000327_rendered.png.
+
+Image 285/344
+
+Image 286/344
+
+Image 287/344
+
+Image 288/344
+
+Image 289/344
+
+Image 290/344
+
+Image 291/344
+
+Image 292/344
+
+Image 293/344
+
+Image 294/344
+
+Image 295/344
+
+Image 296/344
+
+Image 297/344
+
+Image 298/344
+
+Image 299/344
+
+Image 300/344
+
+Image 301/344
+
+Image 302/344
+
+Image 303/344
+
+Image 304/344
+
+Image 305/344
+
+Image 306/344
+
+Image 307/344
+
+Image 308/344
+
+Image 309/344
+
+Image 310/344
+
+Image 311/344
+Chessboard not found in image ./posefusion/calibration_images/000000000354_rendered.png.
+
+Image 312/344
+Chessboard not found in image ./posefusion/calibration_images/000000000355_rendered.png.
+
+Image 313/344
+
+Image 314/344
+
+Image 315/344
+
+Image 316/344
+
+Image 317/344
+
+Image 318/344
+
+Image 319/344
+
+Image 320/344
+
+Image 321/344
+
+Image 322/344
+
+Image 323/344
+
+Image 324/344
+
+Image 325/344
+
+Image 326/344
+
+Image 327/344
+
+Image 328/344
+Chessboard not found in image ./posefusion/calibration_images/000000000371_rendered.png.
+
+Image 329/344
+
+Image 330/344
+
+Image 331/344
+
+Image 332/344
+
+Image 333/344
+
+Image 334/344
+
+Image 335/344
+
+Image 336/344
+
+Image 337/344
+
+Image 338/344
+Chessboard not found in image ./posefusion/calibration_images/000000000381_rendered.png.
+
+Image 339/344
+Chessboard not found in image ./posefusion/calibration_images/000000000382_rendered.png.
+
+Image 340/344
+Chessboard not found in image ./posefusion/calibration_images/000000000383_rendered.png.
+
+Image 341/344
+Chessboard not found in image ./posefusion/calibration_images/000000000384_rendered.png.
+
+Image 342/344
+Chessboard not found in image ./posefusion/calibration_images/000000000385_rendered.png.
+
+Image 343/344
+Chessboard not found in image ./posefusion/calibration_images/000000000386_rendered.png.
+
+Image 344/344
+Chessboard not found in image ./posefusion/calibration_images/000000000387_rendered.png.
+
+Calibrating camera (intrinsics) with points from 262 images...
+
+Intrinsics:
+Re-projection error - cv::calibrateCamera vs. calcReprojectionErrors:	0.806696 vs. 0.806696
+Intrinsics_K:
+[753.6412388549141, 0, 627.6217759928232;
+ 0, 753.892100491527, 355.1896481269448;
+ 0, 0, 1]
+Intrinsics_distCoeff:
+[0.9123249804360222;
+ -1.468621568469073;
+ 0.0004347642659102805;
+ -0.0001957118724493863;
+ -0.6560861553851746;
+ 0.6710345722076936;
+ -0.880020317784341;
+ -1.006786203972356;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0]
+ 
+Intrinsic calibration completed!
+OpenPose calibration toolbox successfully finished. Total time: 4876.533222 seconds.
