@@ -348,6 +348,7 @@ int main(int argc, char* argv[])
         {
             Mat temp = view.clone();
             fisheye::undistortImage(temp, view, cameraMatrix, distCoeffs);
+            // undistort(temp, view, cameraMatrix, distCoeffs);
         }
 
         //------------------------------ Show image and check for input commands -------------------
@@ -470,6 +471,8 @@ static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat
     //Find intrinsic and extrinsic camera parameters for fisheye camera
     double rms = fisheye::calibrate(objectPoints, imagePoints, imageSize, cameraMatrix,
                                  distCoeffs, rvecs, tvecs, s.flag|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
+    // double rms = calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix,
+    //                              distCoeffs, rvecs, tvecs, s.flag|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
 
     cout << "Re-projection error reported by calibrateCamera: "<< rms << endl;
 
