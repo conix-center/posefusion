@@ -38,7 +38,7 @@ b) Stereo Mode : Using the concept of 'Depth from Stereo' based on human binocul
 - [ ] Optimise the 3D pose estimation using 2D pose estimates
 - [ ] Understand how the camera Projection, Intrinsic and Extrinsic matrices calculated
 - [ ] TODO - GRG Ciritcal: How are we assuring the one-to-one body correspondance between the 2 stereo sets? It may so happen that body-1 in stereo set-1 may be actually body-2 in stereo set-2 and not body-1
-        
+- [ ] Need to take care of frame synchronization across multiple cameras i.e. same frame should be processed at a time.
 
 ## Reference Articles 
 1. https://github.com/IntelRealSense/librealsense/blob/master/doc/depth-from-stereo.md

@@ -1,1 +1,3 @@
 python/__pycache__
+calibration_images/*.png
+calibration_images/images_with_corners/
