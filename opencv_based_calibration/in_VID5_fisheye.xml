@@ -6,7 +6,7 @@
   <BoardSize_Height>8</BoardSize_Height>
   
   <!-- The size of a square in some user defined metric system (pixel, millimeter)-->
-  <Square_Size>1140</Square_Size> <!-- Using meters instead of millimeters scale-->
+  <Square_Size>1.14</Square_Size> <!-- Using meters instead of millimeters scale-->
   
   <!-- The type of input used for camera calibration. One of: CHESSBOARD CIRCLES_GRID ASYMMETRIC_CIRCLES_GRID -->
   <Calibrate_Pattern>"CHESSBOARD"</Calibrate_Pattern>
