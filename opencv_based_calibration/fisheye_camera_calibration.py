@@ -5,14 +5,46 @@ import os
 # import glob
 
 CHECKERBOARD = (6,8)
-cameraId = 0
+cameraId = 2
+
+# K = np.array([[-149390.8758233938, 1.700981741370965e+74, 4.686916689497339e+63],
+#  [0, 1.623923680888597e+69, 1.775898752762208e+68],
+#  [0, 0, 1]])
+
+K = np.array([[8.1793481631740565e+02, 0., 6.0070689997785121e+02],
+  [0., 8.1651774059837908e+02, 5.1784529566329593e+02], 
+  [0., 0., 1.,]])
+
+# D = np.array([0.3814478301545055,
+#  -0.5882337345616587,
+#  0.5294893504797997,
+#  -0.1638780151720456])
+
+D = np.array([-1.8102158829399091e+00, 9.1966147162623262e+00,
+    -4.4293900343777355e-04, 1.3638377686816653e-03, 1.3303863414979364e+00, -1.4189051636354870e+00,
+    8.4725535468475819e+00, 4.7911023525901033e+00])
+
+# Intrinsics_K:
+# [-149390.8758233938, 1.700981741370965e+74, 4.686916689497339e+63;
+#  0, 1.623923680888597e+69, 1.775898752762208e+68;
+#  0, 0, 1]
+
+# Intrinsics_distCoeff:
+# [0.3814478301545055;
+#  -0.5882337345616587;
+#  0.5294893504797997;
+#  -0.1638780151720456]
 
 '''
 Code to capture webcam view
 '''
 cap = cv2.VideoCapture(cameraId)
 
+
+
 def start():
+    
+    distort = True
 
     while(True):
         # Capture frame-by-frame
@@ -22,10 +54,19 @@ def start():
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # Display the resulting frame
-        cv2.imshow('frame',gray)
+        if distort:
+            cv2.imshow('frame',gray)
+            print(gray)
+        else:
+            undistorted_img = displayUndistortedImage(gray, K, D)
+            cv2.imshow('frame',undistorted_img)
+            print(undistorted_img)
+
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q') or key == ord('r'):
             break
+        elif key == ord('s'):
+            distort = not distort
 
     # When everything done, release the capture
     cap.release()
@@ -96,14 +137,21 @@ def calibrate():
         print("D=np.array(" + str(D.tolist()) + ")")
 
 
-def displayUndistortedImage():
+def displayUndistortedImage(img, K, D):
     # img = cv2.imread(img_path)
     h,w = img.shape[:2]
-    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, _img_shape[::-1], cv2.CV_16SC2)
+    _img_shape = img.shape[:2]
+
+    # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, _img_shape[::-1], cv2.CV_16SC2)
+    map1, map2 = cv2.initUndistortRectifyMap(K,D,None,K,(w,h),5)
+    
     undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-    cv2.imshow("undistorted", undistorted_img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+    # cv2.imshow("undistorted", undistorted_img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    return undistorted_img
 
 
 if __name__ == '__main__':
