@@ -140,6 +140,8 @@ def calibrate():
 def displayUndistortedImage(img, K, D):
     # img = cv2.imread(img_path)
     h,w = img.shape[:2]
+    h += 100
+    w += 100
     _img_shape = img.shape[:2]
 
     # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, _img_shape[::-1], cv2.CV_16SC2)
