@@ -14,8 +14,15 @@ g++ fisheye_camera_calibration.cpp `pkg-config opencv --cflags --libs` -o fishey
 ./build/examples/openpose/openpose.bin --num_gpu 0 --camera 2 --write_images ./posefusion/fisheyeCalibration_images/
 
 
-./build/examples/calibration/fisheyeCalibration.bin --mode 1 --grid_square_size_mm 114.0 --grid_number_inner_corners "8x6" --camera_serial_number fisheye_cam --calibration_image_dir ./posefusion/fisheyeCalibration_images/
+./build/examples/calibration/fisheyeCalibration.bin --mode 1 --grid_square_size_mm 114.0 --grid_number_inner_corners "8x6" --camera_serial_number fisheye_cam_perspective1 --calibration_image_dir ./posefusion/fisheyeCalibration_images/
 
+
+./build/examples/openpose/openpose.bin --num_gpu 0 --camera 0 --frame_undistort --camera_parameter_path "models/cameraParameters/flir/fisheye_cam_perspective.xml" --write_images ./posefusion/fisheyeCalibration_images/ 
+
+
+## TO See undistorted Image via making use of the new camera Intrinsics
+
+./build/examples/openpose/openpose.bin --num_gpu 0 --frame_undistort --camera_parameter_path "models/cameraParameters/flir/fisheye_cam_perspective.xml"
 
 ====================================
 
@@ -35,8 +42,6 @@ Intrinsics_distCoeff:
  -0.5882337345616587;
  0.5294893504797997;
  -0.1638780151720456]
-
-
 
 
 
