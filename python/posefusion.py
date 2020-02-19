@@ -891,6 +891,9 @@ def publish_person(coord_3D, person_id):
     message = json.dumps(coord_3D.flatten().tolist())
     message = message.strip('[]')
     message = 'Person' + str(person_id) + ',' + message + ",on"
+
+    print(message)
+    
     return message
 
 '''
@@ -925,7 +928,9 @@ if __name__ == '__main__':
     client.on_message = on_message
 
     ################## MQTT Connect ################## 
+    print("Connecting to broker: ", SERVER_ADDR)
     client.connect(SERVER_ADDR, port=1883, keepalive=60)
+    print("Connected to broker: ", SERVER_ADDR)
 
     ################## CALIBRATION ################## 
     while (calib_done == False):
