@@ -99,17 +99,13 @@ def drawLine(person,bodypart,arr, color, action='create'):
     client.publish(new_draw_path + message['object_id'], json_data)
 
 def coordCorrection(arr):
-    # x = x_offset-arr[i][0]
-    # y = y_offset-arr[i][1]
-    # z = z_offset+arr[i][2]
-    # x = 1 - arr[0]
-    # y = -1*arr[1]
-    # z = arr[2]
     x = arr[0]
     y = arr[1]
     z = arr[2]
 
     return [x,y,z]
+
+
 #TODO - GRG : Where is the message structure defined/documentation?
 def refactorDraw(person, bodypart, arr, color, action='create'):
     # partID
@@ -245,43 +241,6 @@ def drawPersonText(person,bodypart, arr, color, action='create'):
     new_draw_path = "realm/s/" + scene + "/"
     client.publish(new_draw_path + message['object_id'], json_data)
 
-#TODO - GRG : tryDraw fun not used?
-def tryDraw(person, bodypart, arr, color):
-    counter = 0
-    onoff = "on"
-
-    # Check if the body part should be drawn or not
-    while (counter < len(arr)):
-        x = -arr[counter][0]
-        y = arr[counter][1]
-        z = arr[counter][2]
-        if (x == 0) and (y == 0) and (z == 0):
-            print("{} --- {} OFF ".format(person, bodypart))
-            onoff = "off"
-        counter = counter + 1
-
-    counter = 0
-    while (counter < len(arr)):
-        x = -arr[counter][0]
-        y = 1-arr[counter][1]
-        z = arr[counter][2]
-
-        if (counter == 0):
-            lastx=x
-            lasty=y
-            lastz=z
-
-        partID = person+'_'+bodypart+'_'+str(counter)
-        MESSAGE="thickline_"+partID+","+FORMAT.format(lastx)+','+FORMAT.format(lasty)+','+FORMAT.format(lastz)+','+FORMAT.format(x)+','+FORMAT.format(y)+','+FORMAT.format(z)+",0,12,1,1,"+color+","+onoff
-        client.publish(draw_path+"/thickline_"+partID,MESSAGE)
-        # print("{} x:{} y:{} z:{}".format(partID, x, y, z))
-        # print(         draw_path+"/thickline_"+partID,MESSAGE)
-        # print(" ")
-        lastx=x
-        lasty=y
-        lastz=z
-        counter = counter + 1
-
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     client.subscribe(TOPIC_3D) #subscribe
@@ -298,7 +257,6 @@ def on_message(client, userdata, message):
     drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create')
     drawLine("origin_line","line-z",[[0, 0, 0], [0, 0, 1]], "#0000FF", action='create')
 
-    #TODO - GRG : When is the camera drawn and for what?
     if (message.topic[:-1] == TOPIC_CAMERA[:-1]):
         theMessage=str(message.payload.decode("utf-8"))
         splits=theMessage.split(',')
@@ -310,11 +268,8 @@ def on_message(client, userdata, message):
         y_offset = 1.8
         camera = int(message.topic[-1])
         if (camera == 0):
-            #The camera are at approx height of about 70inch
-            #[x,y,z] = [0, y_offset, 0]
             color = "#FF0000"
         elif (camera == 1):
-            #[x,y,z] = [baseline, y_offset, 0]
             color = "#00FF00"
         elif (camera == 2):
             color = "#0000FF"
@@ -357,16 +312,6 @@ def on_message(client, userdata, message):
         RSmallToe = [float(splits[70]), float(splits[71]), float(splits[72])]
         RHeel = [float(splits[73]), float(splits[74]), float(splits[75])]
 
-        # tryDraw( Person, "leftHead", [ Nose, LEye, LEar ], color_person[Person])
-        # tryDraw( Person, "rightHead", [ Nose, REye, REar ], color_person[Person])
-        # tryDraw( Person, "torso", [ Nose, Neck, MidHip ], color_person[Person])
-        # tryDraw( Person, "leftArm", [ Neck, LShoulder, LElbow, LWrist ], color_person[Person])
-        # tryDraw( Person, "rightArm", [ Neck, RShoulder, RElbow, RWrist ], color_person[Person])
-        # tryDraw( Person, "leftLeg", [ MidHip, LHip, LKnee, LAnkle ], color_person[Person])
-        # tryDraw( Person, "rightLeg", [ MidHip, RHip, RKnee, RAnkle ], color_person[Person])
-        # tryDraw( Person, "leftFoot", [ LHeel, LAnkle, LBigToe, LSmallToe ], color_person[Person])
-        # tryDraw( Person, "rightFoot", [ RHeel, RAnkle, RBigToe, RSmallToe ], color_person[Person])
-
         refactorDraw( Person, "leftHead", [ Nose, LEye, LEar ], "#280B68" )
         refactorDraw( Person, "rightHead", [ Nose, REye, REar ], "#740C66" )
         refactorDraw( Person, "torso", [ Nose, Neck, MidHip ], "#790A07" )
@@ -379,13 +324,6 @@ def on_message(client, userdata, message):
 
         drawPersonText(Person, "name", LEar, "red")
         last_ts_person[Person] = time.time()
-
-        # #TODO - GRG : What are these reference lines for?
-        # drawLine("Ref_line","line1",[[0, 0, 0], [0, 2, 0]], "#000000", action='create')
-        # drawLine("Ref_line","line2",[[1, 0, 0], [1, 2, 0]], "#000000", action='create')
-        # drawLine("Ref_line","line3",[[0, 0, 1], [0, 2, 1]], "#000000", action='create')
-        # drawLine("Ref_line","line4",[[1, 0, 1], [1, 2, 1]], "#000000", action='create')
-
 
 
 
