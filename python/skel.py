@@ -133,10 +133,11 @@ def refactorDraw(person, bodypart, arr, color, action='create'):
 
         data = {}
         # data['object_type'] = 'thickline'
+        data['object_type'] = 'thickline'
         data['lineWidth'] = 11
         data['color'] = color # '#FF88EE'
         data['path'] =  data_str # '0 0 0, 1 0 0, 1 1 0, 1 1 1'
-
+        
         data_cont = {}
         data_cont['meshline'] = data
 
