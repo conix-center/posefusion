@@ -59,7 +59,7 @@ def refreshArena():
             drawPersonText(key,"", [0, 0, 0], "#FFFFFF", action='delete')
             last_ts_person[key] = 0
 
-def drawLine(person,bodypart,arr, color, action='create'):
+def drawLine(person,bodypart,arr, color, action='create', persist = 'false'):
     # partID
     partID = person+'_'+bodypart
 
@@ -68,6 +68,7 @@ def drawLine(person,bodypart,arr, color, action='create'):
     message['object_id'] = 'thickline_' + partID
     message['action'] = action
     message['type'] = 'object'
+    message['persist'] = persist
 
     # If action is create or update generate data part of the message
     if ((action == 'create') or (action == 'update')):
@@ -253,9 +254,9 @@ def on_message(client, userdata, message):
     #Draw a camera (box) to indicate the origin
     #drawCamera(99, [0, 0, 0], "#FFFFFF")
 
-    drawLine("origin_line","line-x",[[0, 0, 0], [1, 0, 0]], "#FF0000", action='create')
-    drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create')
-    drawLine("origin_line","line-z",[[0, 0, 0], [0, 0, 1]], "#0000FF", action='create')
+    # drawLine("origin_line","line-x",[[0, 0, 0], [1, 0, 0]], "#FF0000", action='create')
+    # drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create')
+    # drawLine("origin_line","line-z",[[0, 0, 0], [0, 0, 1]], "#0000FF", action='create')
 
     if (message.topic[:-1] == TOPIC_CAMERA[:-1]):
         theMessage=str(message.payload.decode("utf-8"))
@@ -339,8 +340,15 @@ if __name__ == '__main__':
     client.connect(SERVER_ADDR)
     client.loop_start() # start loop to process received messages
 
+    #Draw a camera (box) to indicate the origin
+    #drawCamera(99, [0, 0, 0], "#FFFFFF")
+
+    drawLine("origin_line","line-x",[[0, 0, 0], [1, 0, 0]], "#FF0000", action='create', persist='true')
+    drawLine("origin_line","line-y",[[0, 0, 0], [0, 1, 0]], "#00FF00", action='create', persist='true')
+    drawLine("origin_line","line-z",[[0, 0, 0], [0, 0, 1]], "#0000FF", action='create', persist='true')
+
     while True:
-        if ((time.time() - last_ts_check) > 1):
+        if ((time.time() - last_ts_check) > 3):
             refreshArena()
             last_ts_check = time.time() #TODO - GRG : Added by me
         time.sleep(0.1)

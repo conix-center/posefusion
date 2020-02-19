@@ -1,3 +1,8 @@
 python/__pycache__
 calibration_images/*.png
 calibration_images/images_with_corners/
+Scaramuzza_OCamCalib_v3.0_win*
+fisheyeCalibration_images*
+autoCornerFinder_linux.zip
+opencv_based_calibration/3.png
+opencv_based_calibration/000000000055_rendered.png
