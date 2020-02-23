@@ -893,7 +893,7 @@ def publish_person(coord_3D, person_id):
     message = 'Person' + str(person_id) + ',' + message + ",on"
 
     print(message)
-    
+
     return message
 
 '''
@@ -1104,7 +1104,7 @@ if __name__ == '__main__':
                         nz = np.count_nonzero(points3D[:,:,id_mapping[person]])
                         if (nz > MIN_BODY_POINTS):
                             print("[{}] Person{}[{}]: NZ parts = {} ------------- SENDING".format(time.time(), person, id_mapping[person], nz))
-                            client.publish(TOPIC_3D, publish_person(points3D[:,:,id_mapping[person]], person)) 
+                            client.publish(TOPIC_3D, publish_person(points3D[:,:,id_mapping[person]], 0)) 
                         else:
                             print("Person{}[{}]: NZ parts = {}".format(person, id_mapping[person], nz))
 

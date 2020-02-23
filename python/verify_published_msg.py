@@ -65,8 +65,8 @@ def on_connect(client, userdata, flags, rc):
 
     # new_draw_path = "realm/s/" + scene + "/"
     # client.publish(new_draw_path + message['object_id']
-    client.subscribe('realm/s/openpose/thickline_Person1_leftHead') #subscribe
-    client.subscribe('realm/s/openpose/thickline_Person1_rightHead') #subscribe
+    client.subscribe('realm/s/openpose/thickline_Person8_leftHead') #subscribe
+    client.subscribe('realm/s/openpose/thickline_Person9_rightHead') #subscribe
     
 
 
