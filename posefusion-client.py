@@ -7,6 +7,8 @@ from sys import platform
 import argparse
 import numpy as np
 
+import time
+
 
 def initOpenpose():
     # Change these variables to point to the correct folder (Release/x64 etc.)
@@ -46,11 +48,9 @@ def initOpenpose():
     opWrapper.configure(params)
     opWrapper.start()
 
-    # Process Image
-    datum = op.Datum()
+   
 
-    return opWrapper, datum
-
+    return opWrapper, op
 
 """ Reads file containing the ocamcalib parameters exported from the Matlab toolbox """
 def get_ocam_model(filename):
@@ -86,7 +86,6 @@ def get_ocam_model(filename):
 
     return o
     
-
 def world2cam(point3D, o):
     point2D = []    
     
@@ -140,6 +139,8 @@ if __name__ == "__main__":
 
     camera_idx = 0
 
+    recal_intrinsic = False
+
     path_ocam = "python/grg_ocam_calibration.txt"
 
     # Change here the number of internal corners that have to be detected on the chessboard in each dimension
@@ -148,41 +149,83 @@ if __name__ == "__main__":
 
     # Parameter that affect the result of Scaramuzza's undistortion. Try to change it to see how it affects the result
     sf = 4.0
-        
-    o = get_ocam_model(path_ocam)
-    mapx_persp, mapy_persp = create_perspective_undistortion_LUT(o, sf)
 
-    mapx_persp_32 = mapx_persp.astype('float32')
-    mapy_persp_32 = mapy_persp.astype('float32')
+    if recal_intrinsic:  
+        o = get_ocam_model(path_ocam)
+        mapx_persp, mapy_persp = create_perspective_undistortion_LUT(o, sf)
 
-    opWrapper, datum = initOpenpose()
+        mapx_persp_32 = mapx_persp.astype('float32')
+        mapy_persp_32 = mapy_persp.astype('float32')
+        np.save('mapx_persp_32.npy', mapx_persp_32)
+        np.save('mapy_persp_32.npy', mapy_persp_32)
+    else:
+        mapx_persp_32 = np.load('mapx_persp_32.npy')
+        mapy_persp_32 = np.load('mapy_persp_32.npy')
+
+
+    opWrapper, op = initOpenpose()
+    datum = op.Datum()
 
     cap = cv2.VideoCapture(camera_idx)
-
 
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
 
+        print(f'frame shape {frame.shape}')
+        
         # Our operations on the frame come here
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         # undistort
         dst_scaramuzza = cv2.remap(frame, mapx_persp_32, mapy_persp_32, cv2.INTER_LINEAR)
 
+         # Process Image
+        # datum = op.Datum()
         datum.cvInputData = dst_scaramuzza
-        opWrapper.emplaceAndPop([datum])
+
+        # opWrapper.emplaceAndPop([datum])
+        opWrapper.waitAndEmplace([datum])
 
         # Display Image
         print("Body keypoints: \n" + str(datum.poseKeypoints))
 
-        cv2.imshow("OpenPose 1.5.1 - Tutorial Python API", datum.cvOutputData)
+        # import matplotlib.pyplot as plt
+        # plt.imshow(datum.cvOutputData)
+        # plt.show()
+        
 
-        q = cv2.waitKey(1)
+        print(f'datum shape {datum.cvOutputData.shape}')
+        
+        # if datum.cvOutputData.shape != (0,0):
+        #     cv2.imshow("Posefusion Client", datum.cvOutputData)
+        #     # cv2.imshow("Posefusion Client", frame)
+            
+        #     key = cv2.waitKey(1)
 
-        if q & 0xFF == ord('q'):
+        #     if key == ord('q'):
+        #         cv2.destroyAllWindows()
+        #         cap.release()
+        #         break
+        # else:
+        #     print('datum output null')
+        #     cv2.destroyAllWindows()
+        #     cap.release()
+
+        cv2.imshow("Posefusion Client", frame)
+        # cv2.imshow("Posefusion Client", frame)
+        
+        key = cv2.waitKey(10)
+
+        if key == ord('q'):
+            cv2.destroyAllWindows()
+            cap.release()
             break
+
+        # time.sleep(5)
 
     # When everything done, release the capture
     cap.release()
     cv2.destroyAllWindows()
+
+    opWrapper.stop()

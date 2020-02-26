@@ -218,7 +218,7 @@ if __name__ == '__main__':
     idx = 0 # + 700
 
     # Change here the path of the calibration file that contains the parameters obtained through ocam_calibration.py
-    path_ocam = "./grg_ocam_calibration.txt"
+    path_ocam = "python/grg_ocam_calibration.txt"
 
     # Change here the number of internal corners that have to be detected on the chessboard in each dimension
     m = 9
