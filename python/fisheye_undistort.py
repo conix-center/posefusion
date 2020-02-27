@@ -25,6 +25,10 @@ import sys
                                         undistorted through Scaramuzza's toolbox) """
 def undistortedStream(idx, mapx_persp_32, mapy_persp_32):
     cap = cv2.VideoCapture(idx)
+    
+    # Set Resolution
+    cap.set(3, 1280)
+    cap.set(4, 720)
 
     i = 0
     

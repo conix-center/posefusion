@@ -71,14 +71,18 @@ Code to capture webcam view
 '''
 cap = cv2.VideoCapture(cameraId)
 
-path = '../fisheyeCalibration_images'
+# Set Resolution
+cap.set(3, 1280)
+cap.set(4, 720)
+
+path = 'fisheye_calibration_images3'
 
 def start():
     
     distort = True
     
     capture = False
-    capture_delay = 2
+    capture_delay = 1
     prev_capture_time = 0
 
     i = 0

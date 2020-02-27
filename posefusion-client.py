@@ -139,9 +139,9 @@ if __name__ == "__main__":
 
     camera_idx = 0
 
-    recal_intrinsic = False
+    recal_intrinsic = True
 
-    path_ocam = "python/grg_ocam_calibration.txt"
+    path_ocam = "python/grg_ocam_calibration_480x640.txt"
 
     # Change here the number of internal corners that have to be detected on the chessboard in each dimension
     m = 9
@@ -156,8 +156,11 @@ if __name__ == "__main__":
 
         mapx_persp_32 = mapx_persp.astype('float32')
         mapy_persp_32 = mapy_persp.astype('float32')
-        np.save('mapx_persp_32.npy', mapx_persp_32)
-        np.save('mapy_persp_32.npy', mapy_persp_32)
+        np.save('mapx_persp_32_sm.npy', mapx_persp_32)
+        np.save('mapy_persp_32_sm.npy', mapy_persp_32)
+
+        np.savetxt('mapx_persp_32_sm.csv', np.pad(mapx_persp_32, ((0,0),(0,1))), delimiter=',', comments='')
+        np.savetxt('mapy_persp_32_sm.csv', np.pad(mapy_persp_32, ((0,0),(0,1))), delimiter=',', comments='')
     else:
         mapx_persp_32 = np.load('mapx_persp_32.npy')
         mapy_persp_32 = np.load('mapy_persp_32.npy')
@@ -168,10 +171,15 @@ if __name__ == "__main__":
 
     cap = cv2.VideoCapture(camera_idx)
 
+    # Set Resolution
+    cap.set(3, 1280)
+    cap.set(4, 720)
+
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
 
+        # frame = cv2.imread('fisheye_calibration_images2/Right_A16.png')
         print(f'frame shape {frame.shape}')
         
         # Our operations on the frame come here
@@ -212,7 +220,8 @@ if __name__ == "__main__":
         #     cv2.destroyAllWindows()
         #     cap.release()
 
-        cv2.imshow("Posefusion Client", frame)
+        cv2.imshow("Posefusion Client", dst_scaramuzza)
+        # cv2.imshow("Posefusion Client", datum.cvOutputData)
         # cv2.imshow("Posefusion Client", frame)
         
         key = cv2.waitKey(10)

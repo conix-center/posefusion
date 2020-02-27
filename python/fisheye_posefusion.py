@@ -891,6 +891,9 @@ def publish_person(coord_3D, person_id):
     message = json.dumps(coord_3D.flatten().tolist())
     message = message.strip('[]')
     message = 'Person' + str(person_id) + ',' + message + ",on"
+
+    print(message)
+    
     return message
 
 '''
@@ -1015,12 +1018,20 @@ if __name__ == '__main__':
     #                     ], dtype='float64' 
     #                     )
     
+    # K1 = K2 = np.array([
+    #                     [5.5135156683117714e+02, 0., 6.7158840272538885e+02],
+    #                     [0., 5.5183214017381113e+02, 3.6450222140050681e+02], 
+    #                     [0., 0., 1.]
+    #                     ], dtype='float64' 
+    #                     )
+
     K1 = K2 = np.array([
-                        [5.5135156683117714e+02, 0., 6.7158840272538885e+02],
-                        [0., 5.5183214017381113e+02, 3.6450222140050681e+02], 
-                        [0., 0., 1.]
-                        ], dtype='float64' 
-                        )
+                    [240, 0., 335.0988],
+                    [0., 240, 250.0067], 
+                    [0., 0., 1.]
+                    ], dtype='float64' 
+                    )
+
     # K1 = K2 = np.matmul(K1, K)
 
     # K1 = K2 = np.array([
