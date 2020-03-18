@@ -663,9 +663,9 @@ def convertTo3DPointsStereo(ref_cam, number_cameras):
 
     # print("Number of bodies to be sent:", body_valid)
 
-    #Print the gitter 
-    if saved3DCoordinates.shape[-1] > 0:
-        calculateGitter_of_body0(saved3DCoordinates[:,:,0])
+    # #Print the gitter 
+    # if saved3DCoordinates.shape[-1] > 0:
+    #     calculateGitter_of_body0(saved3DCoordinates[:,:,0])
 
     return saved3DCoordinates, body_valid
 
@@ -892,7 +892,7 @@ def publish_person(coord_3D, person_id):
     message = message.strip('[]')
     message = 'Person' + str(person_id) + ',' + message + ",on"
 
-    print(message)
+    # print(message)
     
     return message
 
@@ -942,88 +942,6 @@ if __name__ == '__main__':
     # Default intrinsic matrices
     K1 = K2 = np.load(INTRINSICS_PATH)["mtx"]     
 
-# K1,K2 the Intrinsic matrix 
-# 0:array([299.57255186,   0.        , 351.24615454])
-# 1:array([  0.        , 356.09024225, 214.95575622])
-# 2:array([0., 0., 1.])
-
-    # K1 = K2 = np.array([
-    #                     [299.57255186,   0.        , 501.24615454],
-    #                     [  0.        , 356.09024225, 314.95575622],
-    #                     [0., 0., 1.]
-    #                     ], dtype='float64' 
-    #                     )
-
-    # 5.1807876576294427e+02 0. 3.1182737965290681e+02 0.
-    # 5.1807876576294427e+02 2.2156330399128555e+02 0. 0. 1.
-
-    # #Intrinsic matrix calculated using openCV
-    # K1 = K2 = np.array([
-    #                     [5.0099499480485201e+02, 0., 3.1213235308281827e+02],
-    #                     [0., 5.0094637510452344e+02, 2.3577640792988180e+02],
-    #                     [0., 0., 1.]
-    #                     ], dtype='float64' 
-    #                     )
-
-    # Intrinsic matrix calculated using openpose
-    # K1 = K2 = np.array([ 
-    #                     [753.6412388549141, 0., 627.6217759928232],
-    #                     [0., 753.892100491527, 355.1896481269448],
-    #                     [0., 0., 1.]
-    #                     ], dtype='float64' 
-    #                     )
-
-    # #Best working manually editted
-    # K1 = K2 = np.array([
-    #                     [5.0099499480485201e+02, 0, 627.6217759928232],
-    #                     [0, 5.0094637510452344e+02, 455.1896481269448],
-    #                     [0, 0, 1]
-    #                     ], dtype='float64' 
-    #                     )
-
-    # K = np.array([
-    #                     [-0.0002384524914039259, 4.198343763011602e+40, 3.42698708315384e+31],
-    #                     [0, 7.509021036907826e+37, 7.170036551161641e+43],
-    #                     [0, 0, 1]
-    #                     ], dtype='float64' 
-    #                     )
-
-
-    # K1 = K2 = np.array([
-    #                     [-0.0002384524914039259, 4.198343763011602e+40, 3.42698708315384e+31],
-    #                     [0, 7.509021036907826e+37, 7.170036551161641e+43],
-    #                     [0, 0, 1]
-    #                     ], dtype='float64' 
-    #                     )
-
-
-    # K1 = K2 = np.array([
-    #                     [395.4850243612517, 1.149452412338504e+61, 1.522484768064972e+50],
-    #                     [0, -7.455189967649255e+58, -2.650156696369682e+57],
-    #                     [0, 0, 1]
-    #                     ], dtype='float64' 
-    #                     )
-
-    # K1 = K2 = np.array([
-    #                     [8.1793481631740565e+02, 0., 6.0070689997785121e+02],
-    #                     [0., 8.1651774059837908e+02, 5.1784529566329593e+02], 
-    #                     [0., 0., 1.,]
-    #                     ], dtype='float64' 
-    #                     )
-
-    # K1 = K2 = np.array([
-    #                     [551.3515668311771, 0, 671.5884027253888],
-    #                     [0, 551.8321401738111, 364.5022214005068],
-    #                     [0, 0, 1]
-    #                     ], dtype='float64' 
-    #                     )
-    
-    # K1 = K2 = np.array([
-    #                     [5.5135156683117714e+02, 0., 6.7158840272538885e+02],
-    #                     [0., 5.5183214017381113e+02, 3.6450222140050681e+02], 
-    #                     [0., 0., 1.]
-    #                     ], dtype='float64' 
-    #                     )
 
     K1 = K2 = np.array([
                     [240, 0., 335.0988],
@@ -1032,14 +950,6 @@ if __name__ == '__main__':
                     ], dtype='float64' 
                     )
 
-    # K1 = K2 = np.matmul(K1, K)
-
-    # K1 = K2 = np.array([
-    #                     [-1.4939087582339376e+05, 1.7009817413709649e+74, 4.6869166894973391e+63],
-    #                     [0., 1.6239236808885969e+69, 1.7758987527622079e+68], 
-    #                     [0., 0., 1.,]
-    #                     ], dtype='float64' 
-    #                     )
 
     # Load projection matrices
     if (RUN_CALIBRATION == False):
