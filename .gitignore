@@ -6,3 +6,7 @@ fisheyeCalibration_images*
 autoCornerFinder_linux.zip
 opencv_based_calibration/3.png
 opencv_based_calibration/000000000055_rendered.png
+fisheye_calibration_images3/*.png
+fisheye_calibration_images2/*.png
+python/0.png
+0.png
