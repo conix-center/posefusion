@@ -3,6 +3,12 @@ import cv2
 
 cap = cv2.VideoCapture(0)
 
+# Set Resolution
+# cap.set(3, 1280)
+# cap.set(4, 720)
+cap.set(3, 640)
+cap.set(4, 480)
+
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 out = cv2.VideoWriter('outputLambda1.avi',fourcc, 20.0, (640,480))
