@@ -29,7 +29,7 @@ INTRINSICS_PATH = "calib1.npz"
 MAX_NUM_PEOPLE  = 20     # Maximum number of people supported
 NUM_CAMERAS     = 2      # (2 stereos = 2 * 2 cameras = 4)
 REF_CAM         = 0      # Stereo pair of referencce (0 is for camera0-camera1)
-CONF_SCORE      = 0.6    # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
+CONF_SCORE      = 0.4   # Minimum confidence score for a body required to be considered valid (from OpenPose wrapper)
 USE_STEREO_3D   = False  # If set to true, s3D pts are obtained from stereo (math), otherwise uses projection matrices
 
 # Calibration
@@ -975,8 +975,11 @@ if __name__ == '__main__':
         # Save resulting projection matrices
         np.savez(PROJS_PATH, num_cameras = NUM_CAMERAS, K1=K1, K2=K2, projs=projs, m_matrices = m_matrices,date=int(time.time()))
 
-    baseline = 1
-    camera_ht = 1.84
+    # baseline = 1
+    # camera_ht = 1.84
+    baseline = 0.2413
+    camera_ht = 2.3114
+
     #TODO - GRG : Manually setting the camera matrix of stereo pair 1 for now
 
     # m_matrices[0] = np.array(
@@ -999,6 +1002,17 @@ if __name__ == '__main__':
                          [0,0,1]],
                          dtype='float64'
                         )
+    c = +1/(2) ** 0.5
+    s = -1/(2) ** 0.5
+    TR1 = TR2 = np.array(
+                        [[1,0,0],
+                         [0,c,-s],
+                         [0,s,c]],
+                         dtype='float64'
+                        )
+
+    R1 = R2 = np.matmul(TR1, R1)
+
     T1 = np.array([0, camera_ht, 0]).T
     T2 = np.array([baseline, camera_ht, 0]).T
     
